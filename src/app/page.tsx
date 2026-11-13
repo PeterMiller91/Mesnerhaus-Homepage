@@ -24,27 +24,6 @@ function Divider() {
   );
 }
 
-/* SVG wave divider pointing downward */
-function WaveDown({ from, to }: { from: string; to: string }) {
-  return (
-    <div className="relative -mt-1 leading-none" style={{ background: to }}>
-      <svg viewBox="0 0 1440 56" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full block" style={{ fill: from }}>
-        <path d="M0,0 C360,56 1080,56 1440,0 L1440,0 L0,0 Z" />
-      </svg>
-    </div>
-  );
-}
-
-/* SVG mountain-silhouette divider */
-function MountainDivider({ from, to }: { from: string; to: string }) {
-  return (
-    <div className="relative leading-none" style={{ background: to }}>
-      <svg viewBox="0 0 1440 80" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" className="w-full block" style={{ fill: from }}>
-        <path d="M0,80 L0,60 L180,20 L300,50 L420,10 L540,45 L660,0 L780,38 L900,8 L1020,42 L1140,15 L1260,48 L1440,20 L1440,80 Z" />
-      </svg>
-    </div>
-  );
-}
 
 /* ─── data ───────────────────────────────────────────── */
 
@@ -185,9 +164,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* wave from hero to stats */}
-        <WaveDown from="#000000" to="#2d4a0e" />
-
         {/* ════════════ STATS STRIP ═════════════════════ */}
         <section className="py-14 md:py-16 px-5" style={{ background: "linear-gradient(135deg, #2d4a0e 0%, #3d6318 50%, #527a1f 100%)" }}>
           <div className="max-w-4xl mx-auto grid grid-cols-3 gap-4 md:gap-8">
@@ -206,9 +182,6 @@ export default function Home() {
             ))}
           </div>
         </section>
-
-        {/* mountain divider: stats → about */}
-        <MountainDivider from="#527a1f" to="white" />
 
         {/* ════════════ ABOUT ═══════════════════════════ */}
         <section id="about" className="py-16 md:py-24 px-5 bg-white">
