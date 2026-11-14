@@ -8,14 +8,14 @@ Ohne neuen Build und ohne Git: Die Dateien liegen nur auf dem Server.
 ## Wie es funktioniert
 
 ```
-Telegram  →  https://<domain>/api/telegram-tageskarte.php   (Webhook, PHP)
+Telegram  →  https://landing.mesnerhausarmesberg.de/api/telegram-tageskarte.php   (Webhook, PHP)
                   └─ speichert in <repo>/storage/ (außerhalb von out/):
                        tageskarte.pdf   (aus dem Foto erzeugt oder direkt hochgeladen)
                        tageskarte.jpg   (Vorschaubild, nur bei Fotos)
                        tageskarte.json  (Bildunterschrift, z. B. „Sonntag 15.11.“)
-Besucher  →  https://<domain>/tageskarte.php        → PDF
-             https://<domain>/tageskarte.php?bild   → Vorschaubild
-             https://<domain>/tageskarte.php?info   → Datum + Bildunterschrift (für die Website)
+Besucher  →  https://landing.mesnerhausarmesberg.de/tageskarte.php        → PDF
+             https://landing.mesnerhausarmesberg.de/tageskarte.php?bild   → Vorschaubild
+             https://landing.mesnerhausarmesberg.de/tageskarte.php?info   → Datum + Bildunterschrift (für die Website)
 ```
 
 Die vorherige Version wird als `storage/tageskarte-vorher.pdf` aufbewahrt.
@@ -31,7 +31,7 @@ Ohne Karte zeigt die Website „Die nächste Tageskarte folgt in Kürze“.
    Dann Token, ein langes zufälliges Secret und `site_url` eintragen.
 3. **Webhook registrieren:** Einmal im Browser aufrufen (Token und Secret einsetzen):
    ```
-   https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<domain>/api/telegram-tageskarte.php&secret_token=<SECRET>&allowed_updates=["message"]
+   https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://landing.mesnerhausarmesberg.de/api/telegram-tageskarte.php&secret_token=<SECRET>&allowed_updates=["message"]
    ```
    Antwort muss `"ok":true` enthalten.
 4. **Freischalten:** Dem Bot `/start` schreiben. Er antwortet mit der **Chat-ID**.
@@ -61,3 +61,14 @@ Wer die volle Auflösung will, schickt das Bild über Büroklammer → Datei sta
 ## Voraussetzung
 
 PHP 8 auf dem Webspace (bei netcup/Plesk Standard) mit `allow_url_fopen = On`.
+
+## Fehlersuche
+
+| Symptom | Ursache / Lösung |
+|---|---|
+| `/api/telegram-tageskarte.php` liefert **503** | `mesnerhaus-config.php` fehlt, heißt noch `.example.php` oder liegt nicht direkt über `out/`. Oder `open_basedir` erlaubt nur `{DOCROOT}`: auf `{WEBSPACEROOT}{/}{:}{TMP}{/}` stellen. |
+| Liefert **403** beim Test im Browser | Normal, nur Telegram mit dem Secret darf dort senden. |
+| Bot antwortet gar nicht | `getWebhookInfo` aufrufen und `url` sowie `last_error_message` prüfen. Webhook ggf. neu setzen. |
+| Bot antwortet, aber nichts auf der Seite | Chat-ID fehlt in `telegram_allowed_chat_ids`. Oder der Ordner `storage/` ist nicht beschreibbar. |
+
+Prüfen: `https://api.telegram.org/bot<TOKEN>/getWebhookInfo`

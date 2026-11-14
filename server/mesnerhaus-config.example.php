@@ -10,5 +10,5 @@ return [
     'telegram_allowed_chat_ids' => [ /* 123456789 */ ],
     // Wo die PDF gespeichert wird (außerhalb von out/)
     // 'storage_dir'            => __DIR__ . '/storage',
-    'site_url'                  => 'https://www.mesnerhausarmesberg.de',
+    'site_url'                  => 'https://landing.mesnerhausarmesberg.de',
 ];
