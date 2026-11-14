@@ -31,6 +31,18 @@ Fotos werden schon im Handy auf eine sinnvolle Größe verkleinert (auch iPhone-
 
 **Tipps fürs Foto:** Karte flach hinlegen, von oben fotografieren, gutes Licht.
 
+## Hinweis-Banner
+
+Auf derselben Seite gibt es unten den Bereich **„Hinweis-Banner“**. Der Text erscheint als grüne Leiste ganz oben
+auf der Website, z. B. „Am 24. und 25. Dezember geschlossen“.
+
+- **Text:** höchstens 160 Zeichen.
+- **Link (optional):** Zur Tageskarte, Tisch anfragen, Anfahrt oder Anrufen.
+- **Anzeigen bis (optional):** Nach diesem Tag verschwindet der Banner automatisch. Ohne Datum bleibt er, bis man ihn entfernt.
+- Besucher können den Banner wegklicken. Er bleibt dann bis zum Schließen des Browsers ausgeblendet, bei einem neuen Text erscheint er wieder.
+
+Gespeichert wird in `hinweis.json` im selben Speicherordner wie die Tageskarte, ausgeliefert über `/hinweis.php`.
+
 ## Was die Website zeigt
 
 - Karte vorhanden: Vorschaubild, Überschrift, Button „Als PDF herunterladen“.

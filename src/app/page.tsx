@@ -16,7 +16,7 @@ import SiteFooter from "@/components/SiteFooter";
 import {
   TEL_HREF, TEL_DISPLAY, TEL_E164, WHATSAPP, EMAIL, ADDRESS, ADDRESS_LINE,
   MAPS_EMBED, MAPS_LINK, MAPS_ROUTE, APPLE_ROUTE, BAHN_LINK,
-  OPENING_HOURS, NOTICE, GOOGLE_RATING, GOOGLE_WRITE_REVIEW, GOOGLE_READ_REVIEWS, REVIEWS,
+  OPENING_HOURS, GOOGLE_RATING, GOOGLE_WRITE_REVIEW, GOOGLE_READ_REVIEWS, REVIEWS,
 } from "@/data/site";
 
 /* ─── helpers ───────────────────────────────────────── */
@@ -154,13 +154,6 @@ export default function Home() {
           <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/60 via-black/35 to-black/70" />
           <div className="absolute inset-0 -z-10" style={{ background: "radial-gradient(ellipse 100% 100% at 50% 50%, transparent 40%, rgba(0,0,0,.35) 100%)" }} />
 
-          {NOTICE && (
-            <div className="absolute top-16 inset-x-0 px-5 flex justify-center">
-              <p className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--color-brand-deeper)]/90 text-white text-xs md:text-sm font-bold shadow-lg">
-                <Icon name="bell" size={15} /> {NOTICE}
-              </p>
-            </div>
-          )}
           <div className="hero-logo mb-5 md:mb-7">
             <Image src="/logo-icon.svg" alt="Mesnerhaus" width={88} height={88}
               className="mx-auto md:w-[108px] md:h-[108px]"

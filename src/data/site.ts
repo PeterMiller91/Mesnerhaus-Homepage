@@ -46,8 +46,7 @@ export const SPECIAL_DAYS: { date: string; slot: Slot; note?: string }[] = [
   // { date: "2026-12-24", slot: null, note: "Heiligabend" },
 ];
 
-/* Hinweisleiste ganz oben. null = ausgeblendet.                 */
-export const NOTICE: string | null = null;
+/* Hinweis-Banner: wird über die Upload-Seite gepflegt (public/hinweis.php). */
 
 /* ── Google-Bewertungen ────────────────────────────────────────
    Nur echte Rezensionen aus dem Google-Unternehmensprofil eintragen,

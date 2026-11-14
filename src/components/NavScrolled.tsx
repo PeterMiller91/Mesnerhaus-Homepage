@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { TEL_HREF } from "@/data/site";
 import Image from "next/image";
 import MobileMenu from "./MobileMenu";
+import NoticeBar from "./NoticeBar";
 
 const links = [
   { label: "Über uns",       href: "#about" },
@@ -31,6 +32,7 @@ export default function NavScrolled() {
           : "bg-transparent border-b border-transparent py-0"
       }`}
     >
+      <NoticeBar />
       <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
         <a href="#hero" className="flex items-center gap-2.5 group">
           <Image

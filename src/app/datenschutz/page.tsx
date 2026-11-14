@@ -107,6 +107,12 @@ export default function Datenschutz() {
         Browser löschen.
       </p>
       <p>
+        Wenn Sie den Hinweis-Banner oben auf der Seite schließen, merken wir uns das für die Dauer Ihrer Browser-Sitzung im Sitzungsspeicher
+        (sessionStorage, Eintrag <code>mh-hinweis-zu</code>). Der Eintrag enthält nur den Zeitstempel des Hinweises, verlässt Ihr Gerät nicht und
+        wird beim Schließen des Browsers automatisch gelöscht. Die Speicherung ist für die von Ihnen gewünschte Funktion unbedingt erforderlich
+        (§ 25 Abs. 2 Nr. 2 TDDDG).
+      </p>
+      <p>
         Die Speicherung ist unbedingt erforderlich, damit wir Ihre Entscheidung beachten können (§ 25 Abs. 2 Nr. 2 TDDDG). Rechtsgrundlage für die
         Verarbeitung ist Art. 6 Abs. 1 lit. c DSGVO in Verbindung mit Art. 7 Abs. 1 DSGVO (Nachweis der Einwilligung).
       </p>

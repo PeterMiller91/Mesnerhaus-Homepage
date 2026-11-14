@@ -46,6 +46,14 @@ header p{margin:0;font-size:13px;color:var(--muted)}
 .pick input{position:absolute;width:1px;height:1px;opacity:0}
 .preview{display:none;border-radius:12px;max-height:60vh;width:100%;object-fit:contain;background:var(--pale)}
 label.f{display:grid;gap:6px;font-size:14px;font-weight:700;color:var(--mid)}
+select,textarea,input[type=date]{font:inherit;padding:12px 14px;border:1px solid var(--line);border-radius:12px;width:100%;background:#fff;color:var(--ink)}
+textarea{resize:vertical;min-height:84px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:420px){.row{grid-template-columns:1fr}}
+.count{font-size:12px;color:var(--muted);text-align:right;margin-top:-8px}
+.pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px}
+.pill.on{background:#E8F3DC;color:var(--ok)} .pill.off{background:#F1F0EA;color:var(--muted)}
+.nb{background:#3D5C15;color:#fff;border-radius:12px;padding:10px 14px;font-size:14px;font-weight:700}
 input[type=text]{font:inherit;padding:12px 14px;border:1px solid var(--line);border-radius:12px;width:100%;background:#fff;color:var(--ink)}
 input[type=text]:focus,button:focus-visible,.pick:focus-within{outline:3px solid var(--light);outline-offset:2px}
 button{font:inherit;font-weight:700;border-radius:999px;padding:14px 20px;border:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
@@ -97,6 +105,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'delete') {
         tk_delete();
         $flash = 'Die Tageskarte wurde von der Website entfernt.';
+    } elseif ($action === 'notice_save') {
+        $e = tk_notice_save((string)($_POST['notice_text'] ?? ''), (string)($_POST['notice_link'] ?? ''), (string)($_POST['notice_until'] ?? ''));
+        if ($e === null) $flash = 'Der Hinweis-Banner ist jetzt online.';
+        else { $flash = $e; $flashOk = false; }
+    } elseif ($action === 'notice_delete') {
+        tk_notice_delete();
+        $flash = 'Der Hinweis-Banner wurde entfernt.';
     } else {
         $f = $_FILES['file'] ?? null;
         $err = is_array($f) ? (int)$f['error'] : UPLOAD_ERR_NO_FILE;
@@ -121,7 +136,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 /* ── Seite ───────────────────────────────────────────────────── */
-$cur  = tk_current();
+$cur    = tk_current();
+$notice = tk_notice_get();
+$noticeActive = tk_notice_active() !== null;
 $self = 'tageskarte-upload.php?k=' . rawurlencode($given);
 $v    = $cur ? (string)$cur['updated'] : '';
 
@@ -131,7 +148,7 @@ ob_start(); ?>
     <span class="logo" aria-hidden="true">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>
     </span>
-    <div><h1>Tageskarte hochladen</h1><p>Mesnerhaus am Armesberg</p></div>
+    <div><h1>Tageskarte &amp; Hinweise</h1><p>Mesnerhaus am Armesberg</p></div>
   </header>
 
   <div id="msg" class="msg <?= $flashOk ? 'ok' : 'err' ?>" <?= $flash ? '' : 'hidden' ?>><?= h((string)$flash) ?></div>
@@ -181,6 +198,41 @@ ob_start(); ?>
       <p class="hint">Aktuell ist keine Tageskarte online. Auf der Website steht „Die nächste Tageskarte folgt in Kürze“.</p>
     <?php endif; ?>
   </section>
+
+  <form class="card" method="post" action="<?= h($self) ?>" id="notice">
+    <h2>Hinweis-Banner <?php if ($notice): ?><span class="pill <?= $noticeActive ? 'on' : 'off' ?>"><?= $noticeActive ? 'online' : 'abgelaufen' ?></span><?php endif; ?></h2>
+    <p class="hint">Erscheint ganz oben auf der Website, z. B. für Betriebsurlaub, Sonderöffnungen oder Aktionen.</p>
+    <?php if ($notice): ?>
+      <div class="nb" aria-label="Vorschau"><?= h((string)$notice['text']) ?></div>
+    <?php endif; ?>
+    <input type="hidden" name="k" value="<?= h($given) ?>">
+    <input type="hidden" name="do" value="notice_save">
+    <label class="f">Text
+      <textarea id="notice_text" name="notice_text" maxlength="160" required placeholder="z. B. Am 24. und 25. Dezember geschlossen. Wir wünschen frohe Weihnachten!"><?= h((string)($notice['text'] ?? '')) ?></textarea>
+    </label>
+    <div class="count"><span id="notice_count">0</span> / 160</div>
+    <div class="row">
+      <label class="f">Link (optional)
+        <select id="notice_link" name="notice_link">
+          <?php foreach (TK_NOTICE_LINKS as $val => $label): ?>
+            <option value="<?= h($val) ?>" <?= ($notice['link'] ?? '') === $val ? 'selected' : '' ?>><?= h($label) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </label>
+      <label class="f">Anzeigen bis (optional)
+        <input id="notice_until" type="date" name="notice_until" value="<?= h((string)($notice['until'] ?? '')) ?>">
+      </label>
+    </div>
+    <p class="hint">Ohne Datum bleibt der Banner, bis du ihn entfernst. Mit Datum verschwindet er nach diesem Tag automatisch.</p>
+    <button class="primary" type="submit">Banner speichern</button>
+  </form>
+  <?php if ($notice): ?>
+    <form method="post" action="<?= h($self) ?>" id="notice_del" style="margin-top:-6px">
+      <input type="hidden" name="k" value="<?= h($given) ?>">
+      <input type="hidden" name="do" value="notice_delete">
+      <button class="ghost" type="submit">Banner entfernen</button>
+    </form>
+  <?php endif; ?>
 
   <p class="hint">Diesen Link nicht weitergeben: Wer ihn kennt, kann die Tageskarte ändern. Tipp: als Lesezeichen oder auf dem Startbildschirm speichern.</p>
 </main>
@@ -236,8 +288,16 @@ ob_start(); ?>
     if (b.dataset.sure !== '1') { e.preventDefault(); b.dataset.sure = '1'; b.textContent = 'Wirklich entfernen? Nochmal tippen'; }
   });
 
+  const nt = document.getElementById('notice_text'), nc = document.getElementById('notice_count');
+  if (nt && nc) { const u = () => nc.textContent = nt.value.length; nt.addEventListener('input', u); u(); }
+  const nd = document.getElementById('notice_del');
+  if (nd) nd.addEventListener('submit', (e) => {
+    const b = nd.querySelector('button');
+    if (b.dataset.sure !== '1') { e.preventDefault(); b.dataset.sure = '1'; b.textContent = 'Wirklich entfernen? Nochmal tippen'; }
+  });
+
   if (new URLSearchParams(location.search).get('ok') === '1') show('Danke! Die neue Tageskarte ist jetzt online.', true);
 })();
 </script>
 <?php
-page('Tageskarte hochladen', (string)ob_get_clean());
+page('Tageskarte & Hinweise', (string)ob_get_clean());

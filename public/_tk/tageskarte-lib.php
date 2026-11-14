@@ -142,3 +142,51 @@ function tk_http_get(string $url, int $timeout = 8): ?string {
     $res = @file_get_contents($url, false, $ctx);
     return $res === false ? null : $res;
 }
+
+/* ── Hinweis-Banner ──────────────────────────────────────────── */
+const TK_NOTICE_LINKS = [
+    ''          => 'Kein Link',
+    '#menu'     => 'Zur Tageskarte',
+    '#hours'    => 'Tisch anfragen',
+    '#location' => 'Anfahrt',
+    'tel'       => 'Anrufen',
+];
+
+function tk_notice_file(): string { return tk_dir() . '/hinweis.json'; }
+
+function tk_notice_get(): ?array {
+    $f = tk_notice_file();
+    if (!@is_file($f)) return null;
+    $n = json_decode((string)@file_get_contents($f), true);
+    return is_array($n) && ($n['text'] ?? '') !== '' ? $n : null;
+}
+
+/* Aktiv = vorhanden und „anzeigen bis“ (falls gesetzt) noch nicht vorbei (Zeitzone Berlin). */
+function tk_notice_active(): ?array {
+    $n = tk_notice_get();
+    if (!$n) return null;
+    $until = (string)($n['until'] ?? '');
+    if ($until !== '') {
+        $today = (new DateTime('now', new DateTimeZone('Europe/Berlin')))->format('Y-m-d');
+        if ($until < $today) return null;
+    }
+    return $n;
+}
+
+function tk_notice_save(string $text, string $link, string $until): ?string {
+    $text = trim(preg_replace('/\s+/u', ' ', $text) ?? '');
+    if ($text === '') return 'Bitte einen Text eingeben.';
+    $len = function_exists('mb_strlen') ? mb_strlen($text) : strlen($text);
+    if ($len > 160) return 'Der Text ist zu lang (höchstens 160 Zeichen).';
+    if (!array_key_exists($link, TK_NOTICE_LINKS)) $link = '';
+    if ($until !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $until)) $until = '';
+    $dir = tk_dir();
+    if (!@is_dir($dir) && !@mkdir($dir, 0755, true)) return 'Serverfehler: Speicherordner kann nicht angelegt werden.';
+    $data = json_encode(['text' => $text, 'link' => $link, 'until' => $until, 'updated' => date('c')], JSON_UNESCAPED_UNICODE);
+    return tk_save_atomic(tk_notice_file(), (string)$data) ? null : 'Serverfehler beim Speichern.';
+}
+
+function tk_notice_delete(): void {
+    $f = tk_notice_file();
+    if (@is_file($f)) @unlink($f);
+}
