@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Great_Vibes, Playfair_Display, Lato } from "next/font/google";
 import "./globals.css";
 
@@ -22,7 +22,12 @@ const lato = Lato({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  themeColor: "#8DB43A",
+};
+
 export const metadata: Metadata = {
+  manifest: "/manifest.webmanifest",
   title: "Mesnerhaus – Ausflugsgaststätte am Armesberg",
   description:
     "Herzlich willkommen im Mesnerhaus am Armesberg. Bodenständige Küche, frische Zutaten und ein herrlicher Blick auf die Dreifaltigkeitskirche.",
