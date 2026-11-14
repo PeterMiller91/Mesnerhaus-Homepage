@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ADDRESS } from "@/data/site";
 import { slotFor } from "@/lib/hours";
 import Icon, { type IconName } from "./Icon";
 
@@ -30,9 +29,8 @@ export default function WeatherWidget() {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${ADDRESS.lat}&longitude=${ADDRESS.lon}`
-      + `&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max`
-      + `&timezone=Europe%2FBerlin&forecast_days=5`;
+    // Abruf über den eigenen Server (public/wetter.php), damit keine Besucher-IP an Dritte geht
+    const url = "/wetter.php";
     fetch(url)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((j) => {

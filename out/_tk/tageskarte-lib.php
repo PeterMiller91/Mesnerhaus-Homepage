@@ -126,3 +126,19 @@ function tk_current(): ?array {
     $m = is_file($p['meta']) ? (json_decode((string)file_get_contents($p['meta']), true) ?: []) : [];
     return ['updated' => filemtime($p['pdf']), 'caption' => (string)($m['caption'] ?? ''), 'image' => is_file($p['jpg'])];
 }
+
+/* HTTP-GET über curl oder allow_url_fopen. */
+function tk_http_get(string $url, int $timeout = 8): ?string {
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => $timeout,
+            CURLOPT_FOLLOWLOCATION => true, CURLOPT_USERAGENT => 'mesnerhaus-website']);
+        $res  = curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        return ($res !== false && $code === 200) ? (string)$res : null;
+    }
+    $ctx = stream_context_create(['http' => ['timeout' => $timeout, 'header' => "User-Agent: mesnerhaus-website\r\n"]]);
+    $res = @file_get_contents($url, false, $ctx);
+    return $res === false ? null : $res;
+}

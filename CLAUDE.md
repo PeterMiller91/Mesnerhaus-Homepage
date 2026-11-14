@@ -21,7 +21,11 @@ node scripts/convert-images.mjs  # convert new source images to WebP
 
 **PHP on the server.** There is no fixed menu, only a weekly Tageskarte. It is uploaded via a secret link `public/tageskarte-upload.php?k=<upload_key>` (photos are downscaled in the browser, then converted server-side to an A4 PDF with no extra libs). An optional Telegram webhook `public/api/telegram-tageskarte.php` does the same. Both use `public/_tk/tageskarte-lib.php` (kept inside the webroot because the server's `open_basedir` may forbid reading outside `out/`; direct requests get 404). Config is looked up in `<repo>/mesnerhaus-config.php`, then `out/mesnerhaus-config.php`. Files are stored in `<repo>/storage/` if writable, else `out/tageskarte-daten/` (both gitignored). `public/tageskarte.php` serves them (`?bild` preview JPEG, `?info` JSON). Live site: `landing.mesnerhausarmesberg.de` (the main domain still runs an unrelated old WordPress site). Setup: `server/README.md`. Secrets go in `mesnerhaus-config.php` on the server only, never in git.
 
-**Single page.** The entire site is `src/app/page.tsx` (server component). All interactive pieces are imported as client components from `src/components/`.
+**Privacy / consent.** No cookies, no analytics. The only consent-gated service is the Google Maps iframe (`ConsentMap`, two-click). Consent lives in localStorage `mh-consent` via `src/lib/consent.ts` (bump `CONSENT_VERSION` when adding a service, and update `/datenschutz`). `CookieBanner` is mounted in `layout.tsx`; the footer has a „Cookie-Einstellungen“ link. Weather is fetched through `public/wetter.php` (server-side proxy, 30-min cache) so visitor IPs never reach Open-Meteo. Any new third-party request from the browser needs consent gating plus a Datenschutz section.
+
+**Pages.** Home is `src/app/page.tsx` (server component). Legal pages: `src/app/impressum/`, `src/app/datenschutz/` (shared `LegalPage` frame, `SiteFooter`). `trailingSlash: true` so they export as `out/impressum/index.html`.
+
+**Single page.** The home page is `src/app/page.tsx` (server component). All interactive pieces are imported as client components from `src/components/`.
 
 **Client components** (`"use client"`):
 - `NavScrolled` — transparent nav that turns solid/blurred after 80 px of scroll; owns `MobileMenu`

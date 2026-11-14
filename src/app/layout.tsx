@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Great_Vibes, Playfair_Display, Lato } from "next/font/google";
 import "./globals.css";
+import CookieBanner from "@/components/CookieBanner";
 
 const greatVibes = Great_Vibes({
   weight: "400",
@@ -50,7 +51,10 @@ export default function RootLayout({
       lang="de"
       className={`${greatVibes.variable} ${playfair.variable} ${lato.variable}`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <CookieBanner />
+      </body>
     </html>
   );
 }
