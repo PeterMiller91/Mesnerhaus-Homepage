@@ -111,6 +111,6 @@ export const REVIEWS: Review[] = [
   },
 ];
 
-/* Speisekarte als PDF — wird über den Telegram-Bot hochgeladen
-   (siehe server/README.md) und von speisekarte.php ausgeliefert.  */
-export const MENU_PDF_URL = "/speisekarte.php";
+/* Tageskarte — Foto/PDF wird über den Telegram-Bot hochgeladen
+   (siehe server/README.md) und von tageskarte.php ausgeliefert.   */
+export const TAGESKARTE_URL = "/tageskarte.php";

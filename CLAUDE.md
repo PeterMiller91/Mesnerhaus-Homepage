@@ -19,7 +19,7 @@ node scripts/convert-images.mjs  # convert new source images to WebP
 
 **Content data.** Contact, address, opening hours, special days, notice bar, Google rating and reviews live in `src/data/site.ts` — edit there, not in `page.tsx`. Reviews must be real Google reviews copied verbatim (emojis stripped, names shortened to first name + initial). Icons come from `src/components/Icon.tsx` (inline SVG line icons) — never use emojis as icons.
 
-**PHP on the server.** `public/speisekarte.php` serves the menu PDF and `public/api/telegram-speisekarte.php` is a Telegram webhook that stores uploaded PDFs in `<repo>/storage/` (gitignored, outside `out/`). Setup: `server/README.md`. Secrets go in `<repo>/mesnerhaus-config.php` on the server only.
+**PHP on the server.** There is no fixed menu, only a weekly Tageskarte. `public/api/telegram-tageskarte.php` is a Telegram webhook: a photo (converted server-side to an A4 PDF, no extra libs) or PDF sent to the bot is stored in `<repo>/storage/` (gitignored, outside `out/`). `public/tageskarte.php` serves it (`?bild` preview JPEG, `?info` JSON). Setup: `server/README.md`. Secrets go in `<repo>/mesnerhaus-config.php` on the server only.
 
 **Single page.** The entire site is `src/app/page.tsx` (server component). All interactive pieces are imported as client components from `src/components/`.
 
@@ -33,7 +33,7 @@ node scripts/convert-images.mjs  # convert new source images to WebP
 - `WeatherWidget` — 4-day forecast from Open-Meteo (no key)
 - `ReservationForm` — builds a WhatsApp / mailto table request; no data stored
 - `ReviewCarousel` — horizontally scrolling review cards
-- `MenuPdfButton` — shows the PDF button only if `/speisekarte.php` returns a PDF
+- `Tageskarte` — preview image + PDF download from `/tageskarte.php?info`; friendly fallback when none is uploaded
 
 **Styling.** Tailwind v4 — no `tailwind.config.ts`. All design tokens (colors, fonts) are declared in `src/app/globals.css` under `@theme inline`. CSS animation keyframes (`fadeUp`, `scaleIn`, `float`, etc.) and utility classes (`card-hover`, `img-zoom-wrap`, `link-underline`) also live there.
 

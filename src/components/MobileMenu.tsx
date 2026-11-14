@@ -6,7 +6,7 @@ import Image from "next/image";
 
 const links = [
   { label: "Über uns",       href: "#about" },
-  { label: "Speisekarte",    href: "#menu" },
+  { label: "Tageskarte",     href: "#menu" },
   { label: "Bewertungen",    href: "#bewertungen" },
   { label: "Öffnungszeiten", href: "#hours" },
   { label: "Anfahrt",        href: "#location" },

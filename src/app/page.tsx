@@ -10,7 +10,7 @@ import HoursTable from "@/components/HoursTable";
 import WeatherWidget from "@/components/WeatherWidget";
 import ReservationForm from "@/components/ReservationForm";
 import ReviewCarousel from "@/components/ReviewCarousel";
-import MenuPdfButton from "@/components/MenuPdfButton";
+import Tageskarte from "@/components/Tageskarte";
 import {
   TEL_HREF, TEL_DISPLAY, TEL_E164, WHATSAPP, EMAIL, ADDRESS, ADDRESS_LINE,
   MAPS_EMBED, MAPS_LINK, MAPS_ROUTE, APPLE_ROUTE, BAHN_LINK,
@@ -78,32 +78,6 @@ const benefits: { icon: IconName; title: string; body: string }[] = [
   },
 ];
 
-const menuItems = [
-  {
-    category: "Vorspeisen",
-    items: [
-      { name: "Obatzda mit Breze",    desc: "Hausgemachter Obatzda, frische Breze, Radieschen",                    highlight: false },
-      { name: "Bauernbrot & Schmalz", desc: "Knuspriges Landbrot, selbst gemachter Griebenschmalz",               highlight: false },
-    ],
-  },
-  {
-    category: "Hauptgerichte",
-    items: [
-      { name: "Schweinshaxe",         desc: "Knusprig gebraten, mit Sauerkraut und Semmelknödel",                 highlight: false },
-      { name: "Bauernente",           desc: "Aus dem Ofen, mit Rotkraut und Kartoffelknödel",                     highlight: true  },
-      { name: "Schnitzel Wiener Art", desc: "Mit Kartoffelsalat oder Pommes, Preiselbeeren",                     highlight: false },
-      { name: "Forellenfilet",        desc: "Aus heimischen Gewässern, Buttergemüse und Salzkartoffeln",          highlight: false },
-    ],
-  },
-  {
-    category: "Süßes",
-    items: [
-      { name: "Kaiserschmarrn",       desc: "Fluffig und goldgelb, mit Zwetschgenkompott",                       highlight: false },
-      { name: "Apfelstrudel",         desc: "Warm, mit Vanillesoße oder Sahne",                                  highlight: false },
-    ],
-  },
-];
-
 const faqs = [
   {
     q: "Brauche ich eine Reservierung?",
@@ -111,7 +85,7 @@ const faqs = [
   },
   {
     q: "Gibt es vegetarische oder vegane Gerichte?",
-    a: "Ja — unsere Speisekarte wechselt saisonal und enthält stets vegetarische Alternativen. Bei besonderen Wünschen oder Unverträglichkeiten sprechen Sie uns bitte im Voraus an.",
+    a: "Ja, unsere Tageskarte wechselt wöchentlich und enthält in der Regel ein vegetarisches Gericht. Bei besonderen Wünschen oder Unverträglichkeiten sprechen Sie uns bitte im Voraus an.",
   },
   {
     q: "Ist die Terrasse überdacht?",
@@ -217,7 +191,7 @@ export default function Home() {
           </div>
           <div className="hero-ctas flex flex-col sm:flex-row gap-3 w-full max-w-xs sm:max-w-none sm:w-auto">
             <a href="#menu" className="px-9 py-4 rounded-full bg-white text-[var(--color-brand-dark)] font-bold text-sm tracking-wide hover:bg-[var(--color-brand-pale)] transition-all duration-300 shadow-xl hover:shadow-2xl hover:-translate-y-0.5 text-center">
-              Zur Speisekarte
+              Zur Tageskarte
             </a>
             <a href="#hours" className="px-9 py-4 rounded-full border-2 border-white/55 text-white font-bold text-sm tracking-wide hover:bg-white/15 hover:border-white/80 transition-all duration-300 text-center">
               Tisch reservieren
@@ -281,7 +255,7 @@ export default function Home() {
               </ScrollReveal>
               <ScrollReveal delay={400}>
                 <a href="#menu" className="inline-block mt-7 px-7 py-3.5 bg-[var(--color-brand)] text-white rounded-full text-sm font-bold tracking-wide hover:bg-[var(--color-brand-dark)] transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
-                  Speisekarte ansehen
+                  Tageskarte ansehen
                 </a>
               </ScrollReveal>
             </div>
@@ -386,40 +360,18 @@ export default function Home() {
               <ScrollReveal><SectionLabel>Unsere Küche</SectionLabel></ScrollReveal>
               <ScrollReveal delay={100}>
                 <h2 className="text-3xl md:text-5xl text-[var(--color-dark)]" style={{ fontFamily: "var(--font-playfair)" }}>
-                  Hausgemacht & regional
+                  Unsere Tageskarte
                 </h2>
               </ScrollReveal>
               <ScrollReveal delay={180}>
                 <p className="text-[var(--color-mid)] max-w-lg mx-auto mt-3 text-sm md:text-base">
-                  Bodenständige bayerische Küche — täglich frisch, mit regionalen Zutaten. Keine Tiefkühlware.
+                  Bodenständige bayerische Küche, hausgemacht und mit regionalen Zutaten. Die Karte wechselt jede Woche, je nach Saison und Markt.
                 </p>
               </ScrollReveal>
             </div>
-            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-5 md:gap-7">
-              {menuItems.map((cat, i) => (
-                <ScrollReveal key={cat.category} delay={i * 100}>
-                  <div className="card-hover bg-white rounded-2xl overflow-hidden border border-[var(--color-line)] h-full">
-                    <div className="px-5 py-3.5" style={{ background: "var(--color-brand)" }}>
-                      <h3 className="text-white font-bold tracking-wide text-sm uppercase">{cat.category}</h3>
-                    </div>
-                    <div className="p-5 space-y-4">
-                      {cat.items.map((item) => (
-                        <div key={item.name} className={`pb-4 border-b border-[var(--color-line)] last:border-0 last:pb-0 ${item.highlight ? "pl-3 border-l-2 border-[var(--color-brand)]" : ""}`}>
-                          <p className="font-bold text-[var(--color-dark)] mb-0.5 text-sm md:text-base">{item.name}</p>
-                          <p className="text-xs md:text-sm text-[var(--color-muted)] leading-relaxed">{item.desc}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </ScrollReveal>
-              ))}
-            </div>
-            <ScrollReveal delay={200}>
-              <p className="text-center text-xs md:text-sm text-[var(--color-muted)] mt-8">
-                Tageskarte und saisonale Angebote direkt im Haus oder auf Anfrage.
-              </p>
+            <ScrollReveal delay={120}>
+              <Tageskarte />
             </ScrollReveal>
-            <MenuPdfButton />
           </div>
         </section>
 
@@ -865,7 +817,7 @@ export default function Home() {
               <ul className="space-y-2.5 text-sm">
                 {[
                   { label: "Über uns",       href: "#about"      },
-                  { label: "Speisekarte",    href: "#menu"       },
+                  { label: "Tageskarte",     href: "#menu"       },
                   { label: "Galerie",        href: "#galerie"    },
                   { label: "Feiern",         href: "#feiern"     },
                   { label: "Wandern",        href: "#wandern"    },

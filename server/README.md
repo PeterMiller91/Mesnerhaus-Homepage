@@ -1,18 +1,26 @@
-# Speisekarte per Telegram-Bot hochladen
+# Tageskarte per Telegram-Bot hochladen
 
-Eine PDF an den Bot schicken, und sie ist sofort als „Aktuelle Speisekarte (PDF)“ auf der Website.
-Ohne neuen Build und ohne Git: Die Datei liegt nur auf dem Server.
+Die Tageskarte fotografieren und das Foto an den Bot schicken. Sie ist sofort auf der Website:
+als Vorschaubild im Bereich „Unsere Tageskarte“ und als PDF zum Herunterladen.
+Der Server macht aus dem Foto automatisch eine DIN-A4-PDF. Eine fertige PDF geht auch.
+Ohne neuen Build und ohne Git: Die Dateien liegen nur auf dem Server.
 
 ## Wie es funktioniert
 
 ```
-Telegram  →  https://<domain>/api/telegram-speisekarte.php   (Webhook, PHP)
-                  └─ speichert  <repo>/storage/speisekarte.pdf  (außerhalb von out/)
-Besucher  →  https://<domain>/speisekarte.php  →  liefert die PDF aus
-Website   →  Button erscheint nur, wenn eine PDF vorhanden ist (mit „Stand: …“)
+Telegram  →  https://<domain>/api/telegram-tageskarte.php   (Webhook, PHP)
+                  └─ speichert in <repo>/storage/ (außerhalb von out/):
+                       tageskarte.pdf   (aus dem Foto erzeugt oder direkt hochgeladen)
+                       tageskarte.jpg   (Vorschaubild, nur bei Fotos)
+                       tageskarte.json  (Bildunterschrift, z. B. „Sonntag 15.11.“)
+Besucher  →  https://<domain>/tageskarte.php        → PDF
+             https://<domain>/tageskarte.php?bild   → Vorschaubild
+             https://<domain>/tageskarte.php?info   → Datum + Bildunterschrift (für die Website)
 ```
 
-Die vorherige Version wird als `storage/speisekarte-vorher.pdf` aufbewahrt.
+Die vorherige Version wird als `storage/tageskarte-vorher.pdf` aufbewahrt.
+Ist die Karte älter als 7 Tage, steht auf der Website „Letzte Tageskarte“ mit Hinweis zum Anrufen.
+Ohne Karte zeigt die Website „Die nächste Tageskarte folgt in Kürze“.
 
 ## Einmalige Einrichtung (ca. 10 Minuten)
 
@@ -23,26 +31,31 @@ Die vorherige Version wird als `storage/speisekarte-vorher.pdf` aufbewahrt.
    Dann Token, ein langes zufälliges Secret und `site_url` eintragen.
 3. **Webhook registrieren:** Einmal im Browser aufrufen (Token und Secret einsetzen):
    ```
-   https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<domain>/api/telegram-speisekarte.php&secret_token=<SECRET>&allowed_updates=["message"]
+   https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://<domain>/api/telegram-tageskarte.php&secret_token=<SECRET>&allowed_updates=["message"]
    ```
    Antwort muss `"ok":true` enthalten.
 4. **Freischalten:** Dem Bot `/start` schreiben. Er antwortet mit der **Chat-ID**.
    Diese in `telegram_allowed_chat_ids` eintragen (mehrere Personen möglich).
-5. **Testen:** `/start` erneut senden, dann eine PDF schicken. Der Bot bestätigt den Upload.
+5. **Testen:** `/start` erneut senden, dann ein Foto der Tageskarte schicken. Der Bot bestätigt den Upload.
 
 ## Befehle
 
 | Befehl     | Wirkung                                   |
 |------------|-------------------------------------------|
-| PDF senden | wird zur neuen Speisekarte                |
-| `/status`  | zeigt Datum und Größe der aktuellen Karte |
-| `/start`   | Begrüßung bzw. eigene Chat-ID             |
+| Foto senden | wird zur neuen Tageskarte (Bildunterschrift wird als Überschrift angezeigt) |
+| PDF senden  | wird direkt als Tageskarte übernommen (ohne Vorschaubild)                   |
+| `/status`   | zeigt, seit wann die aktuelle Karte online ist                              |
+| `/loeschen` | nimmt die Tageskarte von der Website                                        |
+| `/start`    | Hilfe bzw. eigene Chat-ID                                                   |
+
+**Tipps fürs Foto:** Karte flach hinlegen, von oben fotografieren, gutes Licht.
+Wer die volle Auflösung will, schickt das Bild über Büroklammer → Datei statt als normales Foto.
 
 ## Sicherheit
 
 - Der Webhook akzeptiert nur Anfragen mit dem geheimen `secret_token` (prüft Telegram-Header).
 - Nur freigeschaltete Chat-IDs dürfen hochladen. Alle anderen werden ignoriert.
-- Es werden nur echte PDFs angenommen (Endung/Typ und `%PDF`-Signatur), max. 20 MB.
+- Angenommen werden nur JPEG-Fotos, PDFs (`%PDF`-Signatur) und, falls GD installiert ist, PNG/WebP. Max. 20 MB.
 - `mesnerhaus-config.php` und `storage/` sind in `.gitignore` und liegen außerhalb des Webroots `out/`.
 
 ## Voraussetzung
