@@ -2,13 +2,18 @@
 /* Kopie als mesnerhaus-config.php in die Repo-Wurzel auf dem Server legen
    (neben package.json, NICHT in out/). Diese Datei wird nicht committet. */
 return [
-    // Token von @BotFather
-    'telegram_bot_token'        => '123456789:ABC...',
-    // Beliebige lange Zufallszeichenkette (A-Z, a-z, 0-9, _ und -)
-    'telegram_webhook_secret'   => 'hier-eine-lange-zufaellige-zeichenkette',
-    // Wer darf hochladen? Chat-IDs (der Bot nennt sie bei /start)
-    'telegram_allowed_chat_ids' => [ /* 123456789 */ ],
-    // Wo die PDF gespeichert wird (außerhalb von out/)
-    // 'storage_dir'            => __DIR__ . '/storage',
+    // ── Upload per Link (empfohlen) ──────────────────────────────────
+    // Geheimer Schlüssel, mindestens 24 Zeichen, nur A-Z, a-z, 0-9.
+    // Upload-Link: https://landing.mesnerhausarmesberg.de/tageskarte-upload.php?k=<upload_key>
+    'upload_key'                => 'hier-mindestens-24-zufaellige-zeichen',
+
     'site_url'                  => 'https://landing.mesnerhausarmesberg.de',
+
+    // Wo die Tageskarte gespeichert wird (außerhalb von out/)
+    // 'storage_dir'            => __DIR__ . '/storage',
+
+    // ── Optional: Upload per Telegram-Bot ────────────────────────────
+    // 'telegram_bot_token'        => '123456789:ABC...',
+    // 'telegram_webhook_secret'   => 'lange-zufaellige-zeichenkette',
+    // 'telegram_allowed_chat_ids' => [ 123456789 ],
 ];

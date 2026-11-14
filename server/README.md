@@ -1,74 +1,78 @@
-# Tageskarte per Telegram-Bot hochladen
+# Tageskarte hochladen
 
-Die Tageskarte fotografieren und das Foto an den Bot schicken. Sie ist sofort auf der Website:
+Die Tageskarte fotografieren und über einen **geheimen Link** hochladen. Sie ist sofort auf der Website:
 als Vorschaubild im Bereich „Unsere Tageskarte“ und als PDF zum Herunterladen.
 Der Server macht aus dem Foto automatisch eine DIN-A4-PDF. Eine fertige PDF geht auch.
 Ohne neuen Build und ohne Git: Die Dateien liegen nur auf dem Server.
 
-## Wie es funktioniert
+## Einmalige Einrichtung (ca. 5 Minuten)
+
+1. **Schlüssel ausdenken:** mindestens 24 zufällige Zeichen, nur Buchstaben und Ziffern,
+   z. B. aus einem Passwort-Manager (Sonderzeichen ausschalten).
+2. **Config auf dem Server anlegen:** In Plesk im Dateimanager den Repo-Ordner der Subdomain
+   `landing.mesnerhausarmesberg.de` öffnen (dort liegen `package.json`, `out/` und `server/`).
+   `server/mesnerhaus-config.example.php` in diesen Ordner kopieren und in `mesnerhaus-config.php` umbenennen.
+   Bei `upload_key` den Schlüssel eintragen. Gibt es die Datei schon (vom Telegram-Versuch), dort einfach die Zeile
+   `'upload_key' => '...',` ergänzen.
+3. **Link aufrufen:**
+   ```
+   https://landing.mesnerhausarmesberg.de/tageskarte-upload.php?k=DEIN-SCHLÜSSEL
+   ```
+   Als Lesezeichen oder auf dem Handy-Startbildschirm speichern („Zum Startbildschirm hinzufügen“).
+
+## Benutzung
+
+1. Link öffnen → „Foto aufnehmen oder auswählen“ antippen → Karte fotografieren.
+2. Optional eine Überschrift eintragen, z. B. „Sonntag, 22. November“.
+3. „Hochladen“ tippen. Fertig.
+
+Unter „Gerade online“ sieht man die aktuelle Karte und kann sie mit „Von der Website entfernen“ wieder abnehmen.
+Fotos werden schon im Handy auf eine sinnvolle Größe verkleinert (auch iPhone-Fotos), damit der Upload schnell geht.
+
+**Tipps fürs Foto:** Karte flach hinlegen, von oben fotografieren, gutes Licht.
+
+## Was die Website zeigt
+
+- Karte vorhanden: Vorschaubild, Überschrift, Button „Als PDF herunterladen“.
+- Karte älter als 7 Tage: „Letzte Tageskarte“ mit Hinweis zum Anrufen.
+- Keine Karte: „Die nächste Tageskarte folgt in Kürze“ mit Telefon und WhatsApp.
+
+## Technik
 
 ```
-Telegram  →  https://landing.mesnerhausarmesberg.de/api/telegram-tageskarte.php   (Webhook, PHP)
+Upload-Seite  →  /tageskarte-upload.php?k=…      (nur mit richtigem Schlüssel, sonst 404)
                   └─ speichert in <repo>/storage/ (außerhalb von out/):
-                       tageskarte.pdf   (aus dem Foto erzeugt oder direkt hochgeladen)
-                       tageskarte.jpg   (Vorschaubild, nur bei Fotos)
-                       tageskarte.json  (Bildunterschrift, z. B. „Sonntag 15.11.“)
-Besucher  →  https://landing.mesnerhausarmesberg.de/tageskarte.php        → PDF
-             https://landing.mesnerhausarmesberg.de/tageskarte.php?bild   → Vorschaubild
-             https://landing.mesnerhausarmesberg.de/tageskarte.php?info   → Datum + Bildunterschrift (für die Website)
+                       tageskarte.pdf  · tageskarte.jpg (Vorschau) · tageskarte.json (Überschrift)
+Besucher      →  /tageskarte.php        → PDF
+                 /tageskarte.php?bild   → Vorschaubild
+                 /tageskarte.php?info   → Datum + Überschrift (für die Website)
+Gemeinsame Logik: server/tageskarte-lib.php
 ```
 
 Die vorherige Version wird als `storage/tageskarte-vorher.pdf` aufbewahrt.
-Ist die Karte älter als 7 Tage, steht auf der Website „Letzte Tageskarte“ mit Hinweis zum Anrufen.
-Ohne Karte zeigt die Website „Die nächste Tageskarte folgt in Kürze“.
-
-## Einmalige Einrichtung (ca. 10 Minuten)
-
-1. **Bot anlegen:** In Telegram `@BotFather` öffnen, `/newbot` senden, Namen vergeben, dann den **Token** kopieren.
-2. **Config auf dem Server anlegen:** In Plesk im Dateimanager in die Repo-Wurzel wechseln
-   (der Ordner, in dem `package.json` und `out/` liegen).
-   `server/mesnerhaus-config.example.php` dorthin kopieren und in `mesnerhaus-config.php` umbenennen.
-   Dann Token, ein langes zufälliges Secret und `site_url` eintragen.
-3. **Webhook registrieren:** Einmal im Browser aufrufen (Token und Secret einsetzen):
-   ```
-   https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://landing.mesnerhausarmesberg.de/api/telegram-tageskarte.php&secret_token=<SECRET>&allowed_updates=["message"]
-   ```
-   Antwort muss `"ok":true` enthalten.
-4. **Freischalten:** Dem Bot `/start` schreiben. Er antwortet mit der **Chat-ID**.
-   Diese in `telegram_allowed_chat_ids` eintragen (mehrere Personen möglich).
-5. **Testen:** `/start` erneut senden, dann ein Foto der Tageskarte schicken. Der Bot bestätigt den Upload.
-
-## Befehle
-
-| Befehl     | Wirkung                                   |
-|------------|-------------------------------------------|
-| Foto senden | wird zur neuen Tageskarte (Bildunterschrift wird als Überschrift angezeigt) |
-| PDF senden  | wird direkt als Tageskarte übernommen (ohne Vorschaubild)                   |
-| `/status`   | zeigt, seit wann die aktuelle Karte online ist                              |
-| `/loeschen` | nimmt die Tageskarte von der Website                                        |
-| `/start`    | Hilfe bzw. eigene Chat-ID                                                   |
-
-**Tipps fürs Foto:** Karte flach hinlegen, von oben fotografieren, gutes Licht.
-Wer die volle Auflösung will, schickt das Bild über Büroklammer → Datei statt als normales Foto.
 
 ## Sicherheit
 
-- Der Webhook akzeptiert nur Anfragen mit dem geheimen `secret_token` (prüft Telegram-Header).
-- Nur freigeschaltete Chat-IDs dürfen hochladen. Alle anderen werden ignoriert.
-- Angenommen werden nur JPEG-Fotos, PDFs (`%PDF`-Signatur) und, falls GD installiert ist, PNG/WebP. Max. 20 MB.
+- Ohne den richtigen Schlüssel antwortet die Upload-Seite mit „Nicht gefunden“ (404) und bremst Rateversuche.
+- Die Seite ist für Suchmaschinen gesperrt (`noindex`).
+- Angenommen werden JPEG-Fotos, PDFs und, falls GD installiert ist, PNG/WebP. Max. 20 MB.
 - `mesnerhaus-config.php` und `storage/` sind in `.gitignore` und liegen außerhalb des Webroots `out/`.
-
-## Voraussetzung
-
-PHP 8 auf dem Webspace (bei netcup/Plesk Standard) mit `allow_url_fopen = On`.
+- Wurde der Link weitergegeben: einfach einen neuen `upload_key` eintragen, der alte Link ist dann ungültig.
 
 ## Fehlersuche
 
 | Symptom | Ursache / Lösung |
 |---|---|
-| `/api/telegram-tageskarte.php` liefert **503** | `mesnerhaus-config.php` fehlt, heißt noch `.example.php` oder liegt nicht direkt über `out/`. Oder `open_basedir` erlaubt nur `{DOCROOT}`: auf `{WEBSPACEROOT}{/}{:}{TMP}{/}` stellen. |
-| Liefert **403** beim Test im Browser | Normal, nur Telegram mit dem Secret darf dort senden. |
-| Bot antwortet gar nicht | `getWebhookInfo` aufrufen und `url` sowie `last_error_message` prüfen. Webhook ggf. neu setzen. |
-| Bot antwortet, aber nichts auf der Seite | Chat-ID fehlt in `telegram_allowed_chat_ids`. Oder der Ordner `storage/` ist nicht beschreibbar. |
+| „Upload ist noch nicht eingerichtet“ | `mesnerhaus-config.php` fehlt, heißt noch `.example.php`, liegt nicht direkt neben `out/`, oder `upload_key` ist kürzer als 24 Zeichen. Bei korrekt liegender Datei: in Plesk unter PHP-Einstellungen `open_basedir` auf `{WEBSPACEROOT}{/}{:}{TMP}{/}` stellen. |
+| „Nicht gefunden“ | Schlüssel im Link stimmt nicht genau mit `upload_key` überein (Groß-/Kleinschreibung, Leerzeichen). |
+| „Serverfehler: Speicherordner …“ | PHP darf im Repo-Ordner keinen Ordner `storage` anlegen. In Plesk den Ordner `storage` von Hand anlegen. |
+| „Datei zu groß für den Server“ | Nur bei großen PDFs. In Plesk unter PHP-Einstellungen `upload_max_filesize` und `post_max_size` auf 20M stellen. |
 
-Prüfen: `https://api.telegram.org/bot<TOKEN>/getWebhookInfo`
+## Optional: Upload per Telegram-Bot
+
+Der Webhook `/api/telegram-tageskarte.php` funktioniert weiterhin, wenn `telegram_bot_token`,
+`telegram_webhook_secret` und `telegram_allowed_chat_ids` in der Config stehen. Webhook setzen:
+```
+https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://landing.mesnerhausarmesberg.de/api/telegram-tageskarte.php&secret_token=<SECRET>&allowed_updates=["message"]
+```
+Befehle: Foto/PDF senden, `/status`, `/loeschen`, `/start` (zeigt die Chat-ID).

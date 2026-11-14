@@ -6,13 +6,9 @@
    Die Dateien liegen außerhalb des Webroots (siehe server/README.md). */
 declare(strict_types=1);
 
-$root   = dirname(__DIR__);                          // Repo-Wurzel (Webroot = out/)
-$config = is_file("$root/mesnerhaus-config.php") ? require "$root/mesnerhaus-config.php" : [];
-$dir    = $config['storage_dir'] ?? "$root/storage";
+require dirname(__DIR__) . '/server/tageskarte-lib.php';
 
-$pdf  = "$dir/tageskarte.pdf";
-$img  = "$dir/tageskarte.jpg";
-$meta = "$dir/tageskarte.json";
+['pdf' => $pdf, 'jpg' => $img, 'meta' => $meta] = tk_paths();
 
 header('X-Content-Type-Options: nosniff');
 
