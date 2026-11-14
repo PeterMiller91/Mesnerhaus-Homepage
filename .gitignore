@@ -42,3 +42,6 @@ next-env.d.ts
 # Server-Konfiguration & hochgeladene Speisekarte
 /mesnerhaus-config.php
 /storage/
+/out/mesnerhaus-config.php
+/out/tageskarte-daten/
+/public/mesnerhaus-config.php

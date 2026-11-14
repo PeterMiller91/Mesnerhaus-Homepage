@@ -5,7 +5,7 @@
    Einrichtung: server/README.md                                      */
 declare(strict_types=1);
 
-require dirname(__DIR__, 2) . '/server/tageskarte-lib.php';
+require dirname(__DIR__) . '/_tk/tageskarte-lib.php';
 $config = tk_config();
 if (!$config) { http_response_code(503); exit; }
 

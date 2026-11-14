@@ -5,7 +5,7 @@
    Einrichtung: server/README.md                                           */
 declare(strict_types=1);
 
-require dirname(__DIR__) . '/server/tageskarte-lib.php';
+require __DIR__ . '/_tk/tageskarte-lib.php';
 
 header('X-Robots-Tag: noindex, nofollow');
 header('Cache-Control: no-store');
@@ -70,8 +70,13 @@ CSS;
 /* ── Zugang prüfen ───────────────────────────────────────────── */
 if (strlen($key) < 24) {
     http_response_code(503);
-    page('Upload nicht eingerichtet', '<main><div class="card"><h1>Upload ist noch nicht eingerichtet</h1>'
-        . '<p class="hint">In <code>mesnerhaus-config.php</code> fehlt ein <code>upload_key</code> (mindestens 24 Zeichen). Anleitung: <code>server/README.md</code>.</p></div></main>');
+    $where = tk_config_file();
+    $hint = $where === null
+        ? '<p class="hint">Die Datei <code>mesnerhaus-config.php</code> wurde nicht gefunden. Gesucht an diesen Orten:</p><ul class="hint">'
+          . implode('', array_map(function ($f) { return '<li><code>' . h(basename(dirname($f))) . '/mesnerhaus-config.php</code></li>'; }, tk_config_candidates()))
+          . '</ul><p class="hint">Der erste Ort ist der Ordner, in dem <code>out</code> liegt, der zweite ist <code>out</code> selbst. Falls PHP nicht aus dem ersten lesen darf, die Datei in den Ordner <code>out</code> legen.</p>'
+        : '<p class="hint">Die Config wurde gefunden, aber <code>upload_key</code> fehlt oder ist kürzer als 24 Zeichen.</p>';
+    page('Upload nicht eingerichtet', '<main><div class="card"><h1>Upload ist noch nicht eingerichtet</h1>' . $hint . '</div></main>');
     exit;
 }
 if ($given === '' || !hash_equals($key, $given)) {

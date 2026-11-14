@@ -6,7 +6,7 @@
    Die Dateien liegen außerhalb des Webroots (siehe server/README.md). */
 declare(strict_types=1);
 
-require dirname(__DIR__) . '/server/tageskarte-lib.php';
+require __DIR__ . '/_tk/tageskarte-lib.php';
 
 ['pdf' => $pdf, 'jpg' => $img, 'meta' => $meta] = tk_paths();
 

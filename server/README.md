@@ -46,7 +46,7 @@ Upload-Seite  →  /tageskarte-upload.php?k=…      (nur mit richtigem Schlüss
 Besucher      →  /tageskarte.php        → PDF
                  /tageskarte.php?bild   → Vorschaubild
                  /tageskarte.php?info   → Datum + Überschrift (für die Website)
-Gemeinsame Logik: server/tageskarte-lib.php
+Gemeinsame Logik: out/_tk/tageskarte-lib.php (Quelle: public/_tk/)
 ```
 
 Die vorherige Version wird als `storage/tageskarte-vorher.pdf` aufbewahrt.
@@ -56,14 +56,14 @@ Die vorherige Version wird als `storage/tageskarte-vorher.pdf` aufbewahrt.
 - Ohne den richtigen Schlüssel antwortet die Upload-Seite mit „Nicht gefunden“ (404) und bremst Rateversuche.
 - Die Seite ist für Suchmaschinen gesperrt (`noindex`).
 - Angenommen werden JPEG-Fotos, PDFs und, falls GD installiert ist, PNG/WebP. Max. 20 MB.
-- `mesnerhaus-config.php` und `storage/` sind in `.gitignore` und liegen außerhalb des Webroots `out/`.
+- `mesnerhaus-config.php` und der Speicherordner sind in `.gitignore`. Bevorzugt liegen sie neben `out/`. Darf PHP dort nicht lesen (`open_basedir`), funktioniert auch `out/mesnerhaus-config.php`, gespeichert wird dann in `out/tageskarte-daten/`.
 - Wurde der Link weitergegeben: einfach einen neuen `upload_key` eintragen, der alte Link ist dann ungültig.
 
 ## Fehlersuche
 
 | Symptom | Ursache / Lösung |
 |---|---|
-| „Upload ist noch nicht eingerichtet“ | `mesnerhaus-config.php` fehlt, heißt noch `.example.php`, liegt nicht direkt neben `out/`, oder `upload_key` ist kürzer als 24 Zeichen. Bei korrekt liegender Datei: in Plesk unter PHP-Einstellungen `open_basedir` auf `{WEBSPACEROOT}{/}{:}{TMP}{/}` stellen. |
+| „Upload ist noch nicht eingerichtet“ | Die Seite zeigt, wo sie gesucht hat. Liegt die Datei neben `out/` und wird trotzdem nicht gefunden, darf PHP dort nicht lesen: Datei einfach in den Ordner `out/` verschieben. |
 | „Nicht gefunden“ | Schlüssel im Link stimmt nicht genau mit `upload_key` überein (Groß-/Kleinschreibung, Leerzeichen). |
 | „Serverfehler: Speicherordner …“ | PHP darf im Repo-Ordner keinen Ordner `storage` anlegen. In Plesk den Ordner `storage` von Hand anlegen. |
 | „Datei zu groß für den Server“ | Nur bei großen PDFs. In Plesk unter PHP-Einstellungen `upload_max_filesize` und `post_max_size` auf 20M stellen. |

@@ -1,21 +1,42 @@
 <?php
 /* Gemeinsame Logik für die Tageskarte (Upload-Seite und Telegram-Bot).
-   Liegt außerhalb des Webroots out/ und wird per require eingebunden. */
+   Liegt in out/_tk/, weil PHP auf manchen Servern (open_basedir) nur
+   innerhalb des Webroots lesen darf. Direkter Aufruf → 404.            */
 declare(strict_types=1);
 
-const TK_REPO_ROOT = __DIR__ . '/..';
+if (realpath((string)($_SERVER['SCRIPT_FILENAME'] ?? '')) === __FILE__) { http_response_code(404); exit; }
+
+define('TK_DOCROOT', dirname(__DIR__));          // …/out
+define('TK_REPO_ROOT', dirname(TK_DOCROOT));     // …/ (Repo-Wurzel)
+
+/* Mögliche Orte der Config, in dieser Reihenfolge. */
+function tk_config_candidates(): array {
+    return [TK_REPO_ROOT . '/mesnerhaus-config.php', TK_DOCROOT . '/mesnerhaus-config.php'];
+}
+
+function tk_config_file(): ?string {
+    foreach (tk_config_candidates() as $f) if (@is_file($f) && @is_readable($f)) return $f;
+    return null;
+}
 
 function tk_config(): array {
     static $cfg = null;
     if ($cfg === null) {
-        $file = TK_REPO_ROOT . '/mesnerhaus-config.php';
-        $cfg  = is_file($file) ? (array)require $file : [];
+        $file = tk_config_file();
+        $cfg  = $file ? (array)require $file : [];
     }
     return $cfg;
 }
 
+/* Speicherordner: aus der Config, sonst neben out/ (falls erlaubt), sonst in out/. */
 function tk_dir(): string {
-    return (string)(tk_config()['storage_dir'] ?? TK_REPO_ROOT . '/storage');
+    static $dir = null;
+    if ($dir !== null) return $dir;
+    $cfg = tk_config()['storage_dir'] ?? null;
+    if (is_string($cfg) && $cfg !== '') return $dir = $cfg;
+    $outside = TK_REPO_ROOT . '/storage';
+    if (@is_dir($outside) || @is_writable(TK_REPO_ROOT)) return $dir = $outside;
+    return $dir = TK_DOCROOT . '/tageskarte-daten';
 }
 
 function tk_paths(): array {
@@ -81,7 +102,7 @@ function tk_store(string $raw, string $caption): ?string {
     }
 
     $dir = tk_dir();
-    if (!is_dir($dir) && !@mkdir($dir, 0750, true)) return 'Serverfehler: Speicherordner kann nicht angelegt werden.';
+    if (!@is_dir($dir) && !@mkdir($dir, 0755, true)) return 'Serverfehler: Speicherordner kann nicht angelegt werden.';
     $p = tk_paths();
     if (is_file($p['pdf'])) @copy($p['pdf'], "$dir/tageskarte-vorher.pdf");   // eine Version Backup
 
