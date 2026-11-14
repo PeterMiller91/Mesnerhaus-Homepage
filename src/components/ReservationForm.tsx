@@ -17,7 +17,18 @@ export default function ReservationForm() {
   const [note, setNote] = useState("");
   const minDate = useSyncExternalStore(() => () => {}, () => new Date().toISOString().slice(0, 10), () => "");
 
-  const closed = date ? !slotFor(new Date(date + "T12:00")).slot : false;
+  const slot = date ? slotFor(new Date(date + "T12:00")).slot : null;
+  const closed = Boolean(date) && !slot;
+  // Halbstündliche Zeiten innerhalb der Öffnungszeit, letzte Ankunft 1 h vor Schluss
+  const times = useMemo(() => {
+    const s = slot ?? { open: "11:00", close: "17:00" };
+    const toM = (t: string) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+    const out: string[] = [];
+    for (let m = toM(s.open); m <= toM(s.close) - 60; m += 30)
+      out.push(`${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`);
+    return out;
+  }, [slot]);
+  const timeValue = times.includes(time) ? time : times[0] ?? time;
 
   const message = useMemo(() => {
     const d = date
@@ -26,13 +37,13 @@ export default function ReservationForm() {
     return [
       "Grüß Gott, ich möchte gerne einen Tisch im Mesnerhaus anfragen:",
       `Datum: ${d}`,
-      `Uhrzeit: ${time} Uhr`,
+      `Uhrzeit: ${timeValue} Uhr`,
       `Personen: ${persons}`,
       `Bereich: ${area}`,
       `Name: ${name || "(Name)"}`,
       note ? `Anmerkung: ${note}` : "",
     ].filter(Boolean).join("\n");
-  }, [date, time, persons, area, name, note]);
+  }, [date, timeValue, persons, area, name, note]);
 
   const ready = Boolean(date && name.trim() && !closed);
   const wa = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(message)}`;
@@ -44,8 +55,8 @@ export default function ReservationForm() {
         <input id="res-date" type="date" required min={minDate} value={date} onChange={(e) => setDate(e.target.value)} className={field} />
       </label>
       <label className={label}>Uhrzeit
-        <select id="res-time" value={time} onChange={(e) => setTime(e.target.value)} className={field}>
-          {["11:00", "11:30", "12:00", "12:30", "13:00", "14:00", "15:00", "17:00", "17:30", "18:00", "18:30", "19:00"].map((t) => <option key={t}>{t}</option>)}
+        <select id="res-time" value={timeValue} onChange={(e) => setTime(e.target.value)} className={field}>
+          {times.map((t) => <option key={t}>{t}</option>)}
         </select>
       </label>
       <label className={label}>Personen
@@ -66,7 +77,7 @@ export default function ReservationForm() {
       </label>
 
       {closed && (
-        <p className="col-span-2 text-sm text-[#A6452F]">An diesem Tag ist Ruhetag. Bitte wählen Sie ein anderes Datum.</p>
+        <p className="col-span-2 text-sm text-[#A6452F]">An diesem Tag haben wir geschlossen. Bitte wählen Sie einen Öffnungstag.</p>
       )}
 
       <div className="col-span-2 flex flex-wrap gap-2.5 pt-1">

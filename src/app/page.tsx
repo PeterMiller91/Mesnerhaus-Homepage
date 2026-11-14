@@ -107,7 +107,7 @@ const menuItems = [
 const faqs = [
   {
     q: "Brauche ich eine Reservierung?",
-    a: "Eine Reservierung wird empfohlen, besonders an Wochenenden und Feiertagen. Spontanbesuche sind willkommen, aber wir können Ihnen keinen Platz garantieren. Am einfachsten kurz anrufen.",
+    a: "Eine Reservierung wird empfohlen, besonders an Sonn- und Feiertagen. Spontanbesuche sind willkommen, aber wir können Ihnen keinen Platz garantieren. Am einfachsten kurz anrufen.",
   },
   {
     q: "Gibt es vegetarische oder vegane Gerichte?",
@@ -826,7 +826,7 @@ export default function Home() {
               Ihr Tisch wartet auf Sie.
             </h2>
             <p className="text-white/70 max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
-              Reservieren Sie jetzt kostenlos und unverbindlich, per Anruf oder WhatsApp. Wochenenden sind schnell voll.
+              Reservieren Sie jetzt kostenlos und unverbindlich, per Anruf oder WhatsApp. Sonntage sind schnell voll.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a href={TEL_HREF}

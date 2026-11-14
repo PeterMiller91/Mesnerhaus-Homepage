@@ -28,16 +28,16 @@ export const BAHN_LINK   = "https://www.bahn.de/";
 /* ── Öffnungszeiten ────────────────────────────────────────────
    Index = Wochentag wie in JavaScript: 0 = Sonntag … 6 = Samstag.
    null = Ruhetag. Zeiten als "HH:MM".
-   TODO: mit dem Google-Unternehmensprofil abgleichen.            */
+   Stand: Google-Unternehmensprofil, November 2026.               */
 export type Slot = { open: string; close: string } | null;
 export const OPENING_HOURS: Slot[] = [
-  { open: "10:00", close: "20:00" }, // Sonntag
+  { open: "11:00", close: "17:00" }, // Sonntag
   null,                              // Montag
   null,                              // Dienstag
-  { open: "11:00", close: "20:00" }, // Mittwoch
-  { open: "11:00", close: "20:00" }, // Donnerstag
-  { open: "11:00", close: "20:00" }, // Freitag
-  { open: "10:00", close: "21:00" }, // Samstag
+  null,                              // Mittwoch
+  null,                              // Donnerstag
+  null,                              // Freitag
+  null,                              // Samstag
 ];
 
 /* Abweichende Tage (Urlaub, Feiertage). Datum "YYYY-MM-DD".
