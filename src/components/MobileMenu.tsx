@@ -1,11 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { TEL_HREF } from "@/data/site";
 import Image from "next/image";
 
 const links = [
   { label: "Über uns",       href: "#about" },
   { label: "Speisekarte",    href: "#menu" },
+  { label: "Bewertungen",    href: "#bewertungen" },
   { label: "Öffnungszeiten", href: "#hours" },
   { label: "Anfahrt",        href: "#location" },
 ];
@@ -88,7 +90,7 @@ export default function MobileMenu({ scrolled = false }: { scrolled?: boolean })
 
         <div className="px-6 pb-10 pt-4">
           <a
-            href="tel:+4900000000"
+            href={TEL_HREF}
             className="flex items-center justify-center gap-2 w-full py-4 bg-[var(--color-brand)] text-white font-bold rounded-full text-sm tracking-wide hover:bg-[var(--color-brand-dark)] transition-colors"
             onClick={() => setOpen(false)}
           >

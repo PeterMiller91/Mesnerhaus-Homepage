@@ -4,14 +4,19 @@ import ParallaxBg from "@/components/ParallaxBg";
 import ScrollReveal from "@/components/ScrollReveal";
 import FloatingCTA from "@/components/FloatingCTA";
 import FaqItem from "@/components/FaqItem";
-
-/* ─── constants ─────────────────────────────────────── */
-const TEL_HREF    = "tel:+4915111056281";
-const TEL_DISPLAY = "0151 110 56 281";
-const EMAIL       = "kontakt@mesnerhausarmesberg.de";
-const MAPS_QUERY  = "Armesberg+1,+95508+Kulmain";
-const MAPS_EMBED  = `https://maps.google.com/maps?q=${MAPS_QUERY}&output=embed&hl=de&z=15`;
-const MAPS_LINK   = `https://maps.google.com/?q=${MAPS_QUERY}`;
+import Icon, { Stars, type IconName } from "@/components/Icon";
+import OpenStatus from "@/components/OpenStatus";
+import HoursTable from "@/components/HoursTable";
+import WeatherWidget from "@/components/WeatherWidget";
+import ReservationForm from "@/components/ReservationForm";
+import ReviewCarousel from "@/components/ReviewCarousel";
+import MenuPdfButton from "@/components/MenuPdfButton";
+import {
+  TEL_HREF, TEL_DISPLAY, TEL_E164, WHATSAPP, EMAIL, ADDRESS, ADDRESS_LINE,
+  MAPS_EMBED, MAPS_LINK, MAPS_ROUTE, APPLE_ROUTE, BAHN_LINK,
+  OPENING_HOURS, NOTICE, GOOGLE_RATING, GOOGLE_WRITE_REVIEW, GOOGLE_READ_REVIEWS, REVIEWS,
+} from "@/data/site";
+import { fmtSlot } from "@/lib/hours";
 
 /* ─── helpers ───────────────────────────────────────── */
 function SectionLabel({ children }: { children: React.ReactNode }) {
@@ -50,24 +55,24 @@ const stats = [
   { value: "Täglich\nfrisch", label: "Regionale Küche" },
 ];
 
-const benefits = [
+const benefits: { icon: IconName; title: string; body: string }[] = [
   {
-    icon: "🏔️",
+    icon: "mountain",
     title: "Panorama, das bleibt",
     body: "Unverbaubare Aussicht über das Oberpfälzer Hügelland — von der Terrasse oder dem Biergarten direkt ins Weite.",
   },
   {
-    icon: "🍽️",
+    icon: "plate",
     title: "Keine Tiefkühlware",
     body: "Was auf Ihrem Teller liegt, wurde heute Morgen in der Region eingekauft. Hausmannskost bedeutet hier wirklich Handarbeit.",
   },
   {
-    icon: "🚗",
+    icon: "parking",
     title: "Einfach ankommen",
-    body: "Kostenloser Parkplatz direkt vor der Tür. Kein Umweg, kein Suchen — Navi auf Armesberg 1, 95508 Kulmain und fertig.",
+    body: "Kostenloser Parkplatz direkt vor der Tür. Kein Umweg, kein Suchen — Navi auf Armesberg 2, 95508 Kulmain und fertig.",
   },
   {
-    icon: "👨‍👩‍👧",
+    icon: "family",
     title: "Für jeden Anlass",
     body: "Wanderer, Familien, Gruppen, Feiernde — alle willkommen. Wir haben Platz, Zeit und echtes Essen für jeden.",
   },
@@ -99,35 +104,6 @@ const menuItems = [
   },
 ];
 
-const reviews = [
-  {
-    name: "Markus H.",
-    stars: 5,
-    text: "Den Kaiserschmarrn gibt es so gut nirgendswo anders. Die Aussicht von der Terrasse ist unglaublich — wir kommen jeden Sommer wieder.",
-    date: "Sommer 2024",
-  },
-  {
-    name: "Familie Rottner",
-    stars: 5,
-    text: "Wanderung auf den Armesberg, Mittagessen im Mesnerhaus — perfekter Ausflugstag. Freundlich, ehrlich, lecker. Genau so soll's sein.",
-    date: "Mai 2024",
-  },
-  {
-    name: "Andrea K.",
-    stars: 5,
-    text: "Wir haben unsere Betriebsfeier hier gehalten. Alles problemlos organisiert, das Essen war hervorragend, die Stimmung toll. Sehr empfehlenswert!",
-    date: "September 2024",
-  },
-];
-
-const hours = [
-  { day: "Montag",             time: "Ruhetag" },
-  { day: "Dienstag",           time: "Ruhetag" },
-  { day: "Mittwoch – Freitag", time: "11:00 – 20:00 Uhr" },
-  { day: "Samstag",            time: "10:00 – 21:00 Uhr" },
-  { day: "Sonntag & Feiertag", time: "10:00 – 20:00 Uhr" },
-];
-
 const faqs = [
   {
     q: "Brauche ich eine Reservierung?",
@@ -147,7 +123,7 @@ const faqs = [
   },
   {
     q: "Wie komme ich am besten hin?",
-    a: "Navi: Armesberg 1, 95508 Kulmain. Kostenloser Parkplatz direkt am Haus. Fahrzeit ab Kemnath ca. 10 Min., ab Weiden ca. 30 Min.",
+    a: "Navi: Armesberg 2, 95508 Kulmain. Kostenloser Parkplatz direkt am Haus. Fahrzeit ab Kemnath ca. 10 Min., ab Weiden ca. 30 Min.",
   },
   {
     q: "Kann ich den Gastraum für eine Feier mieten?",
@@ -155,10 +131,35 @@ const faqs = [
   },
 ];
 
+
+/* ─── strukturierte Daten für Google ─────────────────── */
+const DAY_SCHEMA = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Restaurant",
+  name: "Gaststätte Mesnerhaus",
+  servesCuisine: "Bayerisch",
+  telephone: TEL_E164,
+  email: EMAIL,
+  priceRange: "€€",
+  image: "/images/panorama-1400.webp",
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: ADDRESS.street, postalCode: ADDRESS.zip,
+    addressLocality: ADDRESS.city, addressRegion: ADDRESS.region, addressCountry: "DE",
+  },
+  geo: { "@type": "GeoCoordinates", latitude: ADDRESS.lat, longitude: ADDRESS.lon },
+  hasMap: MAPS_LINK,
+  openingHoursSpecification: OPENING_HOURS.flatMap((slot, d) =>
+    slot ? [{ "@type": "OpeningHoursSpecification", dayOfWeek: DAY_SCHEMA[d], opens: slot.open, closes: slot.close }] : []),
+  acceptsReservations: true,
+};
+
 /* ─── page ───────────────────────────────────────────── */
 export default function Home() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <NavScrolled />
       <FloatingCTA />
 
@@ -178,6 +179,13 @@ export default function Home() {
           <div className="absolute inset-0 -z-10 bg-gradient-to-b from-black/60 via-black/35 to-black/70" />
           <div className="absolute inset-0 -z-10" style={{ background: "radial-gradient(ellipse 100% 100% at 50% 50%, transparent 40%, rgba(0,0,0,.35) 100%)" }} />
 
+          {NOTICE && (
+            <div className="absolute top-16 inset-x-0 px-5 flex justify-center">
+              <p className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[var(--color-brand-deeper)]/90 text-white text-xs md:text-sm font-bold shadow-lg">
+                <Icon name="bell" size={15} /> {NOTICE}
+              </p>
+            </div>
+          )}
           <div className="hero-logo mb-5 md:mb-7">
             <Image src="/logo-icon.svg" alt="Mesnerhaus" width={88} height={88}
               className="mx-auto md:w-[108px] md:h-[108px]"
@@ -198,11 +206,20 @@ export default function Home() {
             style={{ fontFamily: "var(--font-playfair)" }}>
             Bodenständig gut. Hoch oben am Berg.
           </p>
+          <div className="hero-claim flex flex-wrap justify-center gap-2.5 -mt-4 mb-8 md:mb-10">
+            <OpenStatus />
+            {GOOGLE_RATING && (
+              <a href="#bewertungen" className="inline-flex items-center gap-2 px-4 py-2 rounded-full border bg-white/15 border-white/30 text-white backdrop-blur-sm text-xs md:text-sm font-bold">
+                <Stars value={GOOGLE_RATING.rating} size={14} />
+                {GOOGLE_RATING.rating.toLocaleString("de-DE", { minimumFractionDigits: 1 })} · {GOOGLE_RATING.count} Google-Bewertungen
+              </a>
+            )}
+          </div>
           <div className="hero-ctas flex flex-col sm:flex-row gap-3 w-full max-w-xs sm:max-w-none sm:w-auto">
             <a href="#menu" className="px-9 py-4 rounded-full bg-white text-[var(--color-brand-dark)] font-bold text-sm tracking-wide hover:bg-[var(--color-brand-pale)] transition-all duration-300 shadow-xl hover:shadow-2xl hover:-translate-y-0.5 text-center">
               Zur Speisekarte
             </a>
-            <a href={TEL_HREF} className="px-9 py-4 rounded-full border-2 border-white/55 text-white font-bold text-sm tracking-wide hover:bg-white/15 hover:border-white/80 transition-all duration-300 text-center">
+            <a href="#hours" className="px-9 py-4 rounded-full border-2 border-white/55 text-white font-bold text-sm tracking-wide hover:bg-white/15 hover:border-white/80 transition-all duration-300 text-center">
               Tisch reservieren
             </a>
           </div>
@@ -284,7 +301,9 @@ export default function Home() {
               {benefits.map(({ icon, title, body }, i) => (
                 <ScrollReveal key={title} delay={i * 90}>
                   <div className="card-hover group bg-[var(--color-brand-pale)] rounded-2xl p-6 h-full border border-transparent hover:border-[var(--color-brand-light)]">
-                    <span className="text-4xl mb-4 block">{icon}</span>
+                    <span className="w-12 h-12 mb-4 rounded-xl bg-white text-[var(--color-brand-dark)] flex items-center justify-center shadow-sm group-hover:bg-[var(--color-brand)] group-hover:text-white transition-colors duration-300">
+                      <Icon name={icon} size={24} />
+                    </span>
                     <h3 className="font-bold text-[var(--color-dark)] mb-2 text-base">{title}</h3>
                     <p className="text-sm text-[var(--color-mid)] leading-relaxed">{body}</p>
                   </div>
@@ -400,6 +419,7 @@ export default function Home() {
                 Tageskarte und saisonale Angebote direkt im Haus oder auf Anfrage.
               </p>
             </ScrollReveal>
+            <MenuPdfButton />
           </div>
         </section>
 
@@ -423,7 +443,7 @@ export default function Home() {
             </h2>
             <p className="text-base md:text-lg text-white/70 italic max-w-sm mx-auto mb-8"
               style={{ fontFamily: "var(--font-playfair)" }}>
-              „Ein Platz, den man nicht so schnell vergisst."
+              „Ein Platz, den man nicht so schnell vergisst.&ldquo;
             </p>
             <a href={TEL_HREF}
               className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-[var(--color-brand)] text-white font-bold text-sm hover:bg-[var(--color-brand-dark)] transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
@@ -441,28 +461,48 @@ export default function Home() {
             <ScrollReveal className="text-center mb-10 md:mb-14">
               <SectionLabel>Gästestimmen</SectionLabel>
               <h2 className="text-3xl md:text-4xl text-[var(--color-dark)]" style={{ fontFamily: "var(--font-playfair)" }}>
-                Was unsere Gäste sagen
+                Was unsere Gäste auf Google sagen
               </h2>
             </ScrollReveal>
-            <div className="grid md:grid-cols-3 gap-5 md:gap-7">
-              {reviews.map(({ name, stars, text, date }, i) => (
-                <ScrollReveal key={name} delay={i * 100}>
-                  <div className="card-hover bg-[var(--color-brand-pale)] rounded-2xl p-6 h-full border border-[var(--color-brand-light)]">
-                    <div className="flex gap-0.5 mb-4">
-                      {Array.from({ length: stars }).map((_, j) => (
-                        <svg key={j} width="16" height="16" viewBox="0 0 24 24" fill="#B8913A">
-                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                        </svg>
-                      ))}
+            <div className={`grid gap-7 items-start ${REVIEWS.length ? "lg:grid-cols-[280px_1fr]" : "max-w-md mx-auto"}`}>
+              <ScrollReveal direction={REVIEWS.length ? "left" : "up"}>
+                <aside className="bg-white rounded-2xl border border-[var(--color-line)] p-6 flex flex-col gap-4 shadow-sm">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[var(--color-mid)]">
+                    <Icon name="pin" size={15} /> Google-Unternehmensprofil
+                  </span>
+                  {GOOGLE_RATING && (
+                    <div className="flex items-end gap-3">
+                      <span className="text-6xl leading-none text-[var(--color-dark)] tabular-nums" style={{ fontFamily: "var(--font-playfair)" }}>
+                        {GOOGLE_RATING.rating.toLocaleString("de-DE", { minimumFractionDigits: 1 })}
+                      </span>
+                      <span className="grid gap-1 pb-1">
+                        <Stars value={GOOGLE_RATING.rating} size={20} />
+                        <span className="text-xs text-[var(--color-muted)]">{GOOGLE_RATING.count} Bewertungen</span>
+                      </span>
                     </div>
-                    <p className="text-sm md:text-base text-[var(--color-mid)] leading-relaxed mb-5 italic">„{text}"</p>
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-[var(--color-dark)] text-sm">{name}</span>
-                      <span className="text-xs text-[var(--color-muted)]">{date}</span>
-                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-1.5">
+                    {["weite Aussicht", "hausgemacht", "Kuchen & Torten", "freundliches Personal", "faire Preise"].map((t) => (
+                      <span key={t} className="text-xs px-2.5 py-1 rounded-full bg-[var(--color-brand-pale)] text-[var(--color-brand-dark)] border border-[var(--color-brand-light)]">{t}</span>
+                    ))}
                   </div>
+                  {GOOGLE_WRITE_REVIEW && (
+                    <a href={GOOGLE_WRITE_REVIEW} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[var(--color-brand)] text-white font-bold text-sm hover:bg-[var(--color-brand-dark)] transition-colors">
+                      <Icon name="pen" size={16} /> Bewertung schreiben
+                    </a>
+                  )}
+                  <a href={GOOGLE_READ_REVIEWS} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full border-2 border-[var(--color-brand)] text-[var(--color-brand-dark)] font-bold text-sm hover:bg-[var(--color-brand-pale)] transition-colors">
+                    Alle Bewertungen auf Google <Icon name="external" size={15} />
+                  </a>
+                </aside>
+              </ScrollReveal>
+              {REVIEWS.length > 0 && (
+                <ScrollReveal direction="right" delay={120} className="min-w-0">
+                  <ReviewCarousel reviews={REVIEWS} />
                 </ScrollReveal>
-              ))}
+              )}
             </div>
           </div>
         </section>
@@ -542,46 +582,81 @@ export default function Home() {
               </ScrollReveal>
             </div>
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-7">
-              {[
+              {([
                 {
-                  icon: "⛪",
+                  icon: "church",
                   title: "Dreifaltigkeitskirche",
                   body: "Direkt neben dem Mesnerhaus — eine der schönsten Wallfahrtskirchen der Oberpfalz mit weitem Blick über das Land.",
                 },
                 {
-                  icon: "🥾",
+                  icon: "boot",
                   title: "Wanderwege ab Haus",
                   body: "Mehrere markierte Wanderwege starten direkt am Parkplatz. Für Einsteiger wie für geübte Wanderer. Rast inklusive.",
                 },
                 {
-                  icon: "🚴",
+                  icon: "bike",
                   title: "Radfahrer willkommen",
                   body: "Das Mesnerhaus liegt direkt an populären Radrouten durch die Oberpfälzer Alb. Fahrradständer und Erfrischung vorhanden.",
                 },
                 {
-                  icon: "🌄",
+                  icon: "sunrise",
                   title: "Aussichtspunkt",
                   body: "Bei klarem Wetter reicht der Blick vom Armesberg über die gesamte Oberpfalz bis zu den Alpen. Unvergleichlich.",
                 },
                 {
-                  icon: "🧒",
+                  icon: "child",
                   title: "Mit Kindern",
                   body: "Geeignete Wanderwege für Familien mit Kindern, genug Platz zum Toben, bodenständiges Essen — ein Ausflug, den Kinder lieben.",
                 },
                 {
-                  icon: "🅿️",
+                  icon: "car",
                   title: "Kostenlos Parken",
-                  body: "Ausreichend kostenlose Parkplätze direkt am Haus. Navi: Armesberg 1, 95508 Kulmain.",
+                  body: "Ausreichend kostenlose Parkplätze direkt am Haus. Navi: Armesberg 2, 95508 Kulmain.",
                 },
-              ].map(({ icon, title, body }, i) => (
+              ] as { icon: IconName; title: string; body: string }[]).map(({ icon, title, body }, i) => (
                 <ScrollReveal key={title} delay={i * 70}>
                   <div className="card-hover bg-white rounded-2xl p-5 h-full border border-[var(--color-line)]">
-                    <span className="text-3xl mb-3 block">{icon}</span>
+                    <span className="w-11 h-11 mb-3 rounded-xl bg-[var(--color-brand-pale)] text-[var(--color-brand-dark)] flex items-center justify-center">
+                      <Icon name={icon} size={22} />
+                    </span>
                     <h3 className="font-bold text-[var(--color-dark)] mb-1.5 text-sm md:text-base">{title}</h3>
                     <p className="text-xs md:text-sm text-[var(--color-mid)] leading-relaxed">{body}</p>
                   </div>
                 </ScrollReveal>
               ))}
+            </div>
+            <div className="grid md:grid-cols-2 gap-5 md:gap-7 mt-5 md:mt-7">
+              <ScrollReveal delay={80}><WeatherWidget /></ScrollReveal>
+              <ScrollReveal delay={160}>
+                <div className="bg-white rounded-2xl border border-[var(--color-line)] p-5 md:p-6 h-full flex flex-col gap-4">
+                  <div className="flex items-center gap-3">
+                    <span className="w-10 h-10 rounded-xl bg-[var(--color-brand-pale)] text-[var(--color-brand-dark)] flex items-center justify-center">
+                      <Icon name="route" />
+                    </span>
+                    <div>
+                      <h3 className="font-bold text-[var(--color-dark)]">Route planen</h3>
+                      <p className="text-xs text-[var(--color-muted)]">{ADDRESS_LINE}</p>
+                    </div>
+                  </div>
+                  <div className="grid gap-2">
+                    {[
+                      { href: MAPS_ROUTE,  icon: "car" as const,        title: "Google Maps",  sub: "Navigation mit Auto, Rad oder zu Fuß" },
+                      { href: APPLE_ROUTE, icon: "navigation" as const, title: "Apple Karten", sub: "für iPhone und iPad" },
+                      { href: BAHN_LINK,   icon: "bus" as const,        title: "Bus & Bahn",   sub: `Ziel: ${ADDRESS.city}, ${ADDRESS.street}` },
+                    ].map(({ href, icon, title, sub }) => (
+                      <a key={title} href={href} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 rounded-xl border border-[var(--color-line)] hover:border-[var(--color-brand)] hover:bg-[var(--color-brand-pale)] transition-colors group">
+                        <Icon name={icon} size={20} className="text-[var(--color-brand-dark)] shrink-0" />
+                        <span className="leading-tight">
+                          <span className="block font-bold text-sm text-[var(--color-dark)]">{title}</span>
+                          <span className="block text-xs text-[var(--color-muted)]">{sub}</span>
+                        </span>
+                        <Icon name="external" size={15} className="ml-auto text-[var(--color-muted)] group-hover:text-[var(--color-brand-dark)]" />
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              </ScrollReveal>
             </div>
           </div>
         </section>
@@ -597,64 +672,56 @@ export default function Home() {
                 style={{ fontFamily: "var(--font-playfair)" }}>
                 Wann wir für Sie da sind
               </h2>
-              <div>
-                {hours.map(({ day, time }, i) => (
-                  <ScrollReveal key={day} delay={i * 55}>
-                    <div className="flex justify-between items-center py-3.5 border-b border-[var(--color-line)]">
-                      <span className="font-bold text-[var(--color-dark)] text-sm">{day}</span>
-                      <span className={`text-sm ${time === "Ruhetag" ? "text-[var(--color-muted)] italic" : "text-[var(--color-brand-dark)] font-bold"}`}>{time}</span>
-                    </div>
-                  </ScrollReveal>
-                ))}
-              </div>
+              <HoursTable />
               <p className="mt-5 text-xs text-[var(--color-muted)] leading-relaxed">
                 Feiertage können abweichen. Für Gruppen ab 10 Personen bitten wir um Voranmeldung.
               </p>
+              <div className="grid sm:grid-cols-2 gap-3 mt-8">
+                {[
+                  { href: TEL_HREF, label: "Telefon", value: TEL_DISPLAY, icon: "phone" as const, ext: false },
+                  { href: `https://wa.me/${WHATSAPP}`, label: "WhatsApp", value: TEL_DISPLAY, icon: "message" as const, ext: true },
+                ].map(({ href, label, value, icon, ext }) => (
+                  <a key={label} href={href} {...(ext ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                    className="flex items-center gap-3.5 p-4 rounded-xl border border-[var(--color-line)] hover:border-[var(--color-brand)] hover:bg-[var(--color-brand-pale)] transition-all duration-300 group hover:-translate-y-0.5 hover:shadow-md">
+                    <span className="w-10 h-10 shrink-0 rounded-full bg-[var(--color-brand-pale)] text-[var(--color-brand)] flex items-center justify-center group-hover:bg-[var(--color-brand)] group-hover:text-white transition-colors duration-300">
+                      <Icon name={icon} size={17} strokeWidth={2} />
+                    </span>
+                    <span>
+                      <span className="block text-xs text-[var(--color-muted)] uppercase tracking-wide font-bold">{label}</span>
+                      <span className="block font-bold text-[var(--color-dark)] text-sm tabular-nums">{value}</span>
+                    </span>
+                  </a>
+                ))}
+                <a href={`mailto:${EMAIL}`}
+                  className="sm:col-span-2 flex items-center gap-3.5 p-4 rounded-xl border border-[var(--color-line)] hover:border-[var(--color-brand)] hover:bg-[var(--color-brand-pale)] transition-all duration-300 group hover:-translate-y-0.5 hover:shadow-md">
+                  <span className="w-10 h-10 shrink-0 rounded-full bg-[var(--color-brand-pale)] text-[var(--color-brand)] flex items-center justify-center group-hover:bg-[var(--color-brand)] group-hover:text-white transition-colors duration-300">
+                    <Icon name="mail" size={17} strokeWidth={2} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-xs text-[var(--color-muted)] uppercase tracking-wide font-bold">E-Mail</span>
+                    <span className="block font-bold text-[var(--color-dark)] text-sm break-all">{EMAIL}</span>
+                  </span>
+                </a>
+              </div>
             </ScrollReveal>
 
             <ScrollReveal direction="right" delay={150}>
-              <SectionLabel>Reservierung & Kontakt</SectionLabel>
-              <h2 className="text-2xl md:text-4xl text-[var(--color-dark)] mb-7"
+              <SectionLabel>Reservierung</SectionLabel>
+              <h2 className="text-2xl md:text-4xl text-[var(--color-dark)] mb-3"
                 style={{ fontFamily: "var(--font-playfair)" }}>
-                Tisch reservieren
+                Tisch anfragen
               </h2>
-              <div className="space-y-3 mb-6">
-                {[
-                  {
-                    href: TEL_HREF,
-                    label: "Telefon",
-                    value: TEL_DISPLAY,
-                    icon: <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.5 1.21 2 2 0 012.49-.01h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.09 6.09l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z" />,
-                  },
-                  {
-                    href: `mailto:${EMAIL}`,
-                    label: "E-Mail",
-                    value: EMAIL,
-                    icon: <><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" /></>,
-                  },
-                ].map(({ href, label, value, icon }) => (
-                  <a key={label} href={href}
-                    className="flex items-center gap-4 p-4 rounded-xl border border-[var(--color-line)] hover:border-[var(--color-brand)] hover:bg-[var(--color-brand-pale)] transition-all duration-300 group hover:-translate-y-0.5 hover:shadow-md">
-                    <span className="w-10 h-10 shrink-0 rounded-full bg-[var(--color-brand-pale)] flex items-center justify-center group-hover:bg-[var(--color-brand)] transition-colors duration-300">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
-                        className="text-[var(--color-brand)] group-hover:text-white transition-colors duration-300"
-                        stroke="currentColor" strokeWidth="2">{icon}
-                      </svg>
-                    </span>
-                    <div>
-                      <p className="text-xs text-[var(--color-muted)] uppercase tracking-wide font-bold">{label}</p>
-                      <p className="font-bold text-[var(--color-dark)] text-sm md:text-base">{value}</p>
-                    </div>
-                  </a>
-                ))}
+              <p className="text-sm text-[var(--color-mid)] mb-6 leading-relaxed">
+                Am schnellsten per Telefon. Außerhalb unserer Öffnungszeiten einfach hier ausfüllen und per WhatsApp oder E-Mail schicken.
+              </p>
+              <div className="p-5 md:p-6 rounded-2xl bg-[var(--color-brand-pale)] border border-[var(--color-brand-light)]">
+                <ReservationForm />
               </div>
-              <div className="p-4 md:p-5 rounded-xl bg-[var(--color-brand-pale)] border border-[var(--color-brand-light)]">
-                <p className="text-sm text-[var(--color-mid)] leading-relaxed">
-                  <strong className="text-[var(--color-brand-dark)]">Gruppen & Feiern:</strong><br />
-                  Für Betriebsfeiern, Familienfeste oder Wandergruppen stehen Ihnen unsere Gasträume auch exklusiv zur Verfügung.{" "}
-                  <a href="#feiern" className="text-[var(--color-brand)] font-bold hover:underline">Mehr erfahren →</a>
-                </p>
-              </div>
+              <p className="mt-5 text-sm text-[var(--color-mid)] leading-relaxed">
+                <strong className="text-[var(--color-brand-dark)]">Gruppen & Feiern:</strong>{" "}
+                Für Betriebsfeiern, Familienfeste oder Wandergruppen stehen Ihnen unsere Gasträume auch exklusiv zur Verfügung.{" "}
+                <a href="#feiern" className="text-[var(--color-brand)] font-bold hover:underline">Mehr erfahren</a>
+              </p>
             </ScrollReveal>
           </div>
         </section>
@@ -694,7 +761,7 @@ export default function Home() {
                   {
                     icon: <><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></>,
                     title: "Adresse",
-                    lines: ["Armesberg 1, 95508 Kulmain", "Unterhalb der Dreifaltigkeitskirche"],
+                    lines: [ADDRESS_LINE, "Unterhalb der Dreifaltigkeitskirche"],
                   },
                   {
                     icon: <><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></>,
@@ -718,12 +785,17 @@ export default function Home() {
                   </div>
                 ))}
               </div>
-              <a href={MAPS_LINK} target="_blank" rel="noopener noreferrer"
+              <a href={MAPS_ROUTE} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-6 py-3.5 bg-[var(--color-brand)] text-white rounded-full text-sm font-bold hover:bg-[var(--color-brand-dark)] transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" />
                 </svg>
-                In Google Maps öffnen
+                Route mit Google Maps
+              </a>
+              <a href={APPLE_ROUTE} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-6 py-3.5 ml-0 sm:ml-3 mt-3 sm:mt-0 border-2 border-[var(--color-brand)] text-[var(--color-brand-dark)] rounded-full text-sm font-bold hover:bg-[var(--color-brand-pale)] transition-all duration-300">
+                <Icon name="navigation" size={15} strokeWidth={2} />
+                Apple Karten
               </a>
             </ScrollReveal>
 
@@ -754,7 +826,7 @@ export default function Home() {
               Ihr Tisch wartet auf Sie.
             </h2>
             <p className="text-white/70 max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
-              Reservieren Sie jetzt kostenlos und unverbindlich — am besten kurz anrufen. Wochenenden sind schnell voll.
+              Reservieren Sie jetzt kostenlos und unverbindlich, per Anruf oder WhatsApp. Wochenenden sind schnell voll.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a href={TEL_HREF}
@@ -764,9 +836,10 @@ export default function Home() {
                 </svg>
                 {TEL_DISPLAY}
               </a>
-              <a href={`mailto:${EMAIL}`}
+              <a href={`https://wa.me/${WHATSAPP}`} target="_blank" rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-full border-2 border-white/55 text-white font-bold text-sm tracking-wide hover:bg-white/15 hover:border-white/80 transition-all duration-300">
-                Per E-Mail anfragen
+                <Icon name="message" size={16} strokeWidth={2} />
+                Per WhatsApp anfragen
               </a>
             </div>
           </ScrollReveal>
@@ -808,7 +881,7 @@ export default function Home() {
             <div>
               <h4 className="text-xs font-bold tracking-widest uppercase text-white/50 mb-4">Kontakt</h4>
               <address className="not-italic text-sm space-y-1.5 text-white/70">
-                <p>Armesberg 1<br />95508 Kulmain</p>
+                <p>{ADDRESS.street}<br />{ADDRESS.zip} {ADDRESS.city}</p>
                 <p className="mt-3">
                   <a href={TEL_HREF} className="link-underline hover:text-white transition-colors">{TEL_DISPLAY}</a>
                 </p>
@@ -820,17 +893,16 @@ export default function Home() {
 
             <div>
               <h4 className="text-xs font-bold tracking-widest uppercase text-white/50 mb-4">Öffnungszeiten</h4>
-              <ul className="text-sm space-y-1.5 text-white/70">
-                <li><span className="text-white/40">Mo – Di:</span> Ruhetag</li>
-                <li><span className="text-white/40">Mi – Fr:</span> 11–20 Uhr</li>
-                <li><span className="text-white/40">Sa:</span> 10–21 Uhr</li>
-                <li><span className="text-white/40">So & Feiertag:</span> 10–20 Uhr</li>
+              <ul className="text-sm space-y-1.5 text-white/70 tabular-nums">
+                {[1, 2, 3, 4, 5, 6, 0].map((d) => (
+                  <li key={d}><span className="text-white/40 inline-block w-8">{["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"][d]}</span> {fmtSlot(OPENING_HOURS[d])}</li>
+                ))}
               </ul>
             </div>
           </div>
 
           <div className="pt-7 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-white/40">
-            <p>© 2025 Mesnerhaus · Armesberg 1 · 95508 Kulmain</p>
+            <p>© {new Date().getFullYear()} Mesnerhaus · {ADDRESS.street} · {ADDRESS.zip} {ADDRESS.city}</p>
             <div className="flex gap-6">
               <a href="#" className="hover:text-white/70 transition-colors">Impressum</a>
               <a href="#" className="hover:text-white/70 transition-colors">Datenschutz</a>
