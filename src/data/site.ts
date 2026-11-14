@@ -2,6 +2,7 @@
    Zentrale Inhalte der Seite. Hier pflegen, nicht in page.tsx.
    ───────────────────────────────────────────────────────────── */
 
+export const SITE_URL    = "https://mesnerhausarmesberg.de";
 export const TEL_E164    = "+4915111056281";
 export const TEL_HREF    = `tel:${TEL_E164}`;
 export const TEL_DISPLAY = "0151 110 56 281";

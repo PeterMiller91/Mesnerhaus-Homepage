@@ -4,10 +4,10 @@
 return [
     // ── Upload per Link (empfohlen) ──────────────────────────────────
     // Geheimer Schlüssel, mindestens 24 Zeichen, nur A-Z, a-z, 0-9.
-    // Upload-Link: https://landing.mesnerhausarmesberg.de/tageskarte-upload.php?k=<upload_key>
+    // Upload-Link: https://mesnerhausarmesberg.de/tageskarte-upload.php?k=<upload_key>
     'upload_key'                => 'hier-mindestens-24-zufaellige-zeichen',
 
-    'site_url'                  => 'https://landing.mesnerhausarmesberg.de',
+    'site_url'                  => 'https://mesnerhausarmesberg.de',
 
     // Wo die Tageskarte gespeichert wird (außerhalb von out/)
     // 'storage_dir'            => __DIR__ . '/storage',

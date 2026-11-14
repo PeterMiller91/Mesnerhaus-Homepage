@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Great_Vibes, Playfair_Display, Lato } from "next/font/google";
 import "./globals.css";
 import CookieBanner from "@/components/CookieBanner";
+import { SITE_URL } from "@/data/site";
 
 const greatVibes = Great_Vibes({
   weight: "400",
@@ -28,6 +29,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
+  alternates: { canonical: "./" },
   manifest: "/manifest.webmanifest",
   title: "Mesnerhaus – Ausflugsgaststätte am Armesberg",
   description:
@@ -37,6 +40,8 @@ export const metadata: Metadata = {
     description:
       "Bodenständige Küche am Fuße der Dreifaltigkeitskirche. Genuss mit Panorama.",
     locale: "de_DE",
+    url: SITE_URL,
+    images: ["/images/panorama-1400.webp"],
     type: "website",
   },
 };

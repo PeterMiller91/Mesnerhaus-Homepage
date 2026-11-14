@@ -50,6 +50,7 @@ select,textarea,input[type=date]{font:inherit;padding:12px 14px;border:1px solid
 textarea{resize:vertical;min-height:84px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:420px){.row{grid-template-columns:1fr}}
+[hidden]{display:none!important}
 .count{font-size:12px;color:var(--muted);text-align:right;margin-top:-8px}
 .pill{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px}
 .pill.on{background:#E8F3DC;color:var(--ok)} .pill.off{background:#F1F0EA;color:var(--muted)}
@@ -106,7 +107,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         tk_delete();
         $flash = 'Die Tageskarte wurde von der Website entfernt.';
     } elseif ($action === 'notice_save') {
-        $e = tk_notice_save((string)($_POST['notice_text'] ?? ''), (string)($_POST['notice_link'] ?? ''), (string)($_POST['notice_until'] ?? ''));
+        $e = tk_notice_save((string)($_POST['notice_text'] ?? ''), (string)($_POST['notice_link'] ?? ''), (string)($_POST['notice_until'] ?? ''),
+            (string)($_POST['notice_url'] ?? ''), (string)($_POST['notice_label'] ?? ''));
         if ($e === null) $flash = 'Der Hinweis-Banner ist jetzt online.';
         else { $flash = $e; $flashOk = false; }
     } elseif ($action === 'notice_delete') {
@@ -223,6 +225,14 @@ ob_start(); ?>
         <input id="notice_until" type="date" name="notice_until" value="<?= h((string)($notice['until'] ?? '')) ?>">
       </label>
     </div>
+    <div class="row" id="custom_link" <?= ($notice['link'] ?? '') === 'custom' ? '' : 'hidden' ?>>
+      <label class="f">Link-Adresse
+        <input id="notice_url" type="text" inputmode="url" name="notice_url" maxlength="300" placeholder="https://www.beispiel.de" value="<?= h((string)($notice['url'] ?? '')) ?>">
+      </label>
+      <label class="f">Link-Text
+        <input id="notice_label" type="text" name="notice_label" maxlength="40" placeholder="Mehr erfahren" value="<?= h((string)($notice['label'] ?? '')) ?>">
+      </label>
+    </div>
     <p class="hint">Ohne Datum bleibt der Banner, bis du ihn entfernst. Mit Datum verschwindet er nach diesem Tag automatisch.</p>
     <button class="primary" type="submit">Banner speichern</button>
   </form>
@@ -290,6 +300,8 @@ ob_start(); ?>
 
   const nt = document.getElementById('notice_text'), nc = document.getElementById('notice_count');
   if (nt && nc) { const u = () => nc.textContent = nt.value.length; nt.addEventListener('input', u); u(); }
+  const nl = document.getElementById('notice_link'), cl = document.getElementById('custom_link');
+  if (nl && cl) { const t = () => { cl.hidden = nl.value !== 'custom'; }; nl.addEventListener('change', t); t(); }
   const nd = document.getElementById('notice_del');
   if (nd) nd.addEventListener('submit', (e) => {
     const b = nd.querySelector('button');

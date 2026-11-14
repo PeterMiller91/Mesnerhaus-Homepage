@@ -150,6 +150,7 @@ const TK_NOTICE_LINKS = [
     '#hours'    => 'Tisch anfragen',
     '#location' => 'Anfahrt',
     'tel'       => 'Anrufen',
+    'custom'    => 'Eigener Link …',
 ];
 
 function tk_notice_file(): string { return tk_dir() . '/hinweis.json'; }
@@ -173,16 +174,30 @@ function tk_notice_active(): ?array {
     return $n;
 }
 
-function tk_notice_save(string $text, string $link, string $until): ?string {
+function tk_notice_save(string $text, string $link, string $until, string $url = '', string $label = ''): ?string {
     $text = trim(preg_replace('/\s+/u', ' ', $text) ?? '');
     if ($text === '') return 'Bitte einen Text eingeben.';
     $len = function_exists('mb_strlen') ? mb_strlen($text) : strlen($text);
     if ($len > 160) return 'Der Text ist zu lang (höchstens 160 Zeichen).';
     if (!array_key_exists($link, TK_NOTICE_LINKS)) $link = '';
     if ($until !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $until)) $until = '';
+
+    $url = trim($url); $label = trim(preg_replace('/\s+/u', ' ', $label) ?? '');
+    if ($link === 'custom') {
+        if ($url !== '' && !preg_match('#^(https?://|/)#i', $url)) $url = 'https://' . $url;   // „www.beispiel.de“ erlauben
+        $okUrl = $url !== '' && (substr($url, 0, 1) === '/' ? substr($url, 0, 2) !== '//' : filter_var($url, FILTER_VALIDATE_URL) !== false);
+        if (!$okUrl || !preg_match('#^(https?://|/)#i', $url)) return 'Bitte eine gültige Link-Adresse eingeben, z. B. https://www.beispiel.de';
+        if (strlen($url) > 300) return 'Die Link-Adresse ist zu lang.';
+        if ($label === '') $label = 'Mehr erfahren';
+        $llen = function_exists('mb_strlen') ? mb_strlen($label) : strlen($label);
+        if ($llen > 40) return 'Der Link-Text ist zu lang (höchstens 40 Zeichen).';
+    } else {
+        $url = ''; $label = '';
+    }
+
     $dir = tk_dir();
     if (!@is_dir($dir) && !@mkdir($dir, 0755, true)) return 'Serverfehler: Speicherordner kann nicht angelegt werden.';
-    $data = json_encode(['text' => $text, 'link' => $link, 'until' => $until, 'updated' => date('c')], JSON_UNESCAPED_UNICODE);
+    $data = json_encode(['text' => $text, 'link' => $link, 'url' => $url, 'label' => $label, 'until' => $until, 'updated' => date('c')], JSON_UNESCAPED_UNICODE);
     return tk_save_atomic(tk_notice_file(), (string)$data) ? null : 'Serverfehler beim Speichern.';
 }
 

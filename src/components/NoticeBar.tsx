@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { TEL_HREF } from "@/data/site";
 import Icon from "./Icon";
 
-type Notice = { active: boolean; text: string; link: string; until: string; updated: string };
+type Notice = { active: boolean; text: string; link: string; url?: string; label?: string; until: string; updated: string };
 
 const LINKS: Record<string, { href: string; label: string }> = {
   "#menu": { href: "/#menu", label: "Zur Tageskarte" },
@@ -30,7 +30,10 @@ export default function NoticeBar() {
   }, []);
 
   if (!n) return null;
-  const link = LINKS[n.link];
+  const custom = n.link === "custom" && n.url && /^(https?:\/\/|\/(?!\/))/i.test(n.url)
+    ? { href: n.url, label: n.label || "Mehr erfahren", external: /^https?:\/\//i.test(n.url) }
+    : null;
+  const link = custom ?? (LINKS[n.link] ? { ...LINKS[n.link], external: false } : null);
   const close = () => {
     try { sessionStorage.setItem("mh-hinweis-zu", n.updated); } catch { /* egal */ }
     setN(null);
@@ -45,7 +48,7 @@ export default function NoticeBar() {
           {link && (
             <>
               {" "}
-              <a href={link.href} className="underline underline-offset-2 whitespace-nowrap hover:text-[var(--color-brand-light)]">
+              <a href={link.href} {...(link.external ? { target: "_blank", rel: "noopener noreferrer" } : {})} className="underline underline-offset-2 whitespace-nowrap hover:text-[var(--color-brand-light)]">
                 {link.label}
               </a>
             </>

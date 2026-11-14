@@ -16,7 +16,7 @@ Ohne neuen Build und ohne Git: Die Dateien liegen nur auf dem Server.
    `'upload_key' => '...',` ergänzen.
 3. **Link aufrufen:**
    ```
-   https://landing.mesnerhausarmesberg.de/tageskarte-upload.php?k=DEIN-SCHLÜSSEL
+   https://mesnerhausarmesberg.de/tageskarte-upload.php?k=DEIN-SCHLÜSSEL
    ```
    Als Lesezeichen oder auf dem Handy-Startbildschirm speichern („Zum Startbildschirm hinzufügen“).
 
@@ -37,7 +37,7 @@ Auf derselben Seite gibt es unten den Bereich **„Hinweis-Banner“**. Der Text
 auf der Website, z. B. „Am 24. und 25. Dezember geschlossen“.
 
 - **Text:** höchstens 160 Zeichen.
-- **Link (optional):** Zur Tageskarte, Tisch anfragen, Anfahrt oder Anrufen.
+- **Link (optional):** Zur Tageskarte, Tisch anfragen, Anfahrt, Anrufen oder **Eigener Link** (beliebige Adresse wie `https://…` oder `/datenschutz/`, mit eigenem Link-Text bis 40 Zeichen; externe Links öffnen in einem neuen Tab).
 - **Anzeigen bis (optional):** Nach diesem Tag verschwindet der Banner automatisch. Ohne Datum bleibt er, bis man ihn entfernt.
 - Besucher können den Banner wegklicken. Er bleibt dann bis zum Schließen des Browsers ausgeblendet, bei einem neuen Text erscheint er wieder.
 

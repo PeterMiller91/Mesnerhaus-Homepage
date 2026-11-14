@@ -10,5 +10,5 @@ header('X-Content-Type-Options: nosniff');
 
 $n = tk_notice_active();
 echo json_encode($n
-    ? ['active' => true, 'text' => $n['text'], 'link' => $n['link'] ?? '', 'until' => $n['until'] ?? '', 'updated' => $n['updated'] ?? '']
+    ? ['active' => true, 'text' => $n['text'], 'link' => $n['link'] ?? '', 'url' => $n['url'] ?? '', 'label' => $n['label'] ?? '', 'until' => $n['until'] ?? '', 'updated' => $n['updated'] ?? '']
     : ['active' => false], JSON_UNESCAPED_UNICODE);
