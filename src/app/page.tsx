@@ -51,58 +51,70 @@ function Wave({ from, to }: { from: string; to: string }) {
 
 /* ─── data ───────────────────────────────────────────── */
 const stats = [
-  { value: "731 m",          label: "Höhe über NN" },
-  { value: "Seit\nJahr\u00ADzehnten", label: "Familienbetrieb" },
-  { value: "Täglich\nfrisch", label: "Regionale Küche" },
+  { value: "731 m",          label: "Weitblick über die Oberpfalz" },
+  { value: "Über\n20 Jahre", label: "Familienbetrieb" },
+  { value: "Haus\u00ADgemacht", label: "Küche & Kuchen" },
 ];
 
 const benefits: { icon: IconName; title: string; body: string }[] = [
   {
     icon: "mountain",
-    title: "Panorama, das bleibt",
-    body: "Unverbaubare Aussicht über das Oberpfälzer Hügelland — von der Terrasse oder dem Biergarten direkt ins Weite.",
+    title: "Weitblick über die Oberpfalz",
+    body: "Von der Terrasse und aus dem Biergarten schauen Sie auf 731 Metern weit über das Land. Ein Teil der Terrasse ist überdacht.",
   },
   {
     icon: "plate",
-    title: "Keine Tiefkühlware",
-    body: "Was auf Ihrem Teller liegt, wurde heute Morgen in der Region eingekauft. Hausmannskost bedeutet hier wirklich Handarbeit.",
+    title: "Hausgemacht statt aufgewärmt",
+    body: "Wir kochen frisch und von Hand, mit vielen Zutaten aus der Region. Die Tageskarte wechselt jede Woche.",
+  },
+  {
+    icon: "cake",
+    title: "Selbstgebackene Kuchen",
+    body: "Torten, Küchle und Hefebuchteln aus der eigenen Küche. In unseren Google-Bewertungen werden sie besonders oft gelobt.",
   },
   {
     icon: "parking",
     title: "Einfach ankommen",
-    body: "Kostenloser Parkplatz direkt vor der Tür. Kein Umweg, kein Suchen — Navi auf Armesberg 2, 95508 Kulmain und fertig.",
-  },
-  {
-    icon: "family",
-    title: "Für jeden Anlass",
-    body: "Wanderer, Familien, Gruppen, Feiernde — alle willkommen. Wir haben Platz, Zeit und echtes Essen für jeden.",
+    body: "Kostenloser Parkplatz direkt am Haus, Fahrradständer und Wanderwege ab der Tür. Hunde sind drinnen und draußen willkommen.",
   },
 ];
 
 const faqs = [
   {
-    q: "Brauche ich eine Reservierung?",
-    a: "Eine Reservierung wird empfohlen, besonders an Sonn- und Feiertagen. Spontanbesuche sind willkommen, aber wir können Ihnen keinen Platz garantieren. Am einfachsten kurz anrufen.",
+    q: "Haben Sie nur sonntags geöffnet?",
+    a: "Ja, für Gäste sind wir jeden Sonntag von 11 bis 17 Uhr da. Feiern und Gruppen ab 10 Personen sind nach Absprache auch an anderen Tagen möglich. Rufen Sie uns einfach an.",
   },
   {
-    q: "Gibt es vegetarische oder vegane Gerichte?",
-    a: "Ja, unsere Tageskarte wechselt wöchentlich und enthält in der Regel ein vegetarisches Gericht. Bei besonderen Wünschen oder Unverträglichkeiten sprechen Sie uns bitte im Voraus an.",
+    q: "Brauche ich eine Reservierung?",
+    a: "Wir empfehlen es, denn sonntags ist es oft voll. Spontane Gäste sind willkommen, einen Platz können wir dann aber nicht garantieren. Am einfachsten kurz anrufen oder per WhatsApp schreiben.",
+  },
+  {
+    q: "Gibt es Kaffee und Kuchen?",
+    a: "Ja. Am Nachmittag gibt es selbstgebackene Kuchen, Torten und Küchle aus unserer Küche, dazu Kaffee und Eis.",
+  },
+  {
+    q: "Gibt es vegetarische Gerichte?",
+    a: "Ja, auf der Tageskarte steht in der Regel mindestens ein vegetarisches Gericht. Bei besonderen Wünschen oder Unverträglichkeiten sprechen Sie uns bitte vorher an.",
+  },
+  {
+    q: "Wie funktioniert der Biergarten?",
+    a: "Im Biergarten bedienen Sie sich selbst: Sie bestellen an der Ausgabe und bekommen einen Pager, der sich meldet, sobald Ihr Essen fertig ist. In der Gaststube werden Sie am Tisch bedient.",
   },
   {
     q: "Ist die Terrasse überdacht?",
-    a: "Teilweise. Ein Teil der Terrasse ist überdacht und somit auch bei leichtem Regen nutzbar. Bei schlechtem Wetter stehen Ihnen unsere gemütlichen Innenräume offen.",
+    a: "Teilweise. Ein Teil der Terrasse ist überdacht und auch bei leichtem Regen nutzbar. Bei schlechtem Wetter sitzen Sie in unserer gemütlichen Gaststube.",
   },
   {
     q: "Dürfen Hunde mit?",
-    a: "Ja, Hunde sind auf der Terrasse herzlich willkommen. Bitte halten Sie Ihren Hund an der Leine.",
+    a: "Ja, Hunde sind bei uns drinnen und draußen willkommen.",
   },
   {
     q: "Wie komme ich am besten hin?",
-    a: "Navi: Armesberg 2, 95508 Kulmain. Kostenloser Parkplatz direkt am Haus. Fahrzeit ab Kemnath ca. 10 Min., ab Weiden ca. 30 Min.",
+    a: "Navi: Armesberg 2, 95508 Kulmain. Kostenloser Parkplatz direkt am Haus. Fahrzeit ab Kemnath ca. 10 Minuten, ab Weiden ca. 30 Minuten.",
   },
   {
-    q: "Kann ich den Gastraum für eine Feier mieten?",
-    a: "Ja, wir stellen unsere Räumlichkeiten für private Feiern, Betriebsveranstaltungen und Gruppen zur Verfügung. Nehmen Sie einfach Kontakt auf — wir erstellen Ihnen gerne ein Angebot.",
+    q: "Kann ich das Mesnerhaus für eine Feier mieten?",
+    a: "Ja. Für Geburtstage, Taufen, Betriebsfeiern und Gruppen bis 60 Gäste reservieren wir die Gasträume exklusiv für Sie, auch an anderen Tagen als sonntags. Wir stellen das Menü mit Ihnen zusammen und machen Ihnen gerne ein Angebot.",
   },
 ];
 
@@ -170,9 +182,9 @@ export default function Home() {
             </p>
             <span className="w-10 md:w-14 h-px bg-white/55" />
           </div>
-          <p className="hero-claim text-base md:text-xl text-white/80 italic max-w-xs md:max-w-md mb-9 md:mb-11"
+          <p className="hero-claim text-base md:text-xl text-white/80 italic max-w-[22rem] md:max-w-xl text-balance mb-9 md:mb-11"
             style={{ fontFamily: "var(--font-playfair)" }}>
-            Bodenständig gut. Hoch oben am Berg.
+            Hausgemachte Küche und Kuchen mit Weitblick.<br />Jeden Sonntag von 11 bis 17 Uhr.
           </p>
           <div className="hero-claim flex flex-wrap justify-center gap-2.5 -mt-4 mb-8 md:mb-10">
             <OpenStatus />
@@ -241,14 +253,17 @@ export default function Home() {
               <ScrollReveal delay={160}>
                 <h2 className="text-3xl md:text-5xl text-[var(--color-dark)] mb-4 leading-tight"
                   style={{ fontFamily: "var(--font-playfair)" }}>
-                  Rast mit Aussicht —<br />seit Jahrzehnten
+                  Sonntags auf<br />den Armesberg
                 </h2>
               </ScrollReveal>
               <ScrollReveal delay={220}><Divider /></ScrollReveal>
               <ScrollReveal delay={300} className="mt-5 space-y-4 text-[var(--color-mid)] leading-relaxed text-sm md:text-base">
-                <p>Das Mesnerhaus liegt unterhalb der Dreifaltigkeitskirche am Armesberg — auf 731 Metern, mit Blick über die Oberpfalz und einem Küchenfenster, durch das noch echter Dampf aufsteigt.</p>
-                <p>Kein Fertigprodukt, keine Franchise. Was hier auf den Tisch kommt, wird täglich frisch aus regionalen Zutaten zubereitet — nach Rezepten, die schon die Großmutter kannte.</p>
-                <p>Wanderer, Ausflügler, Familien — wer einmal hier war, kommt wieder. Oft schon im nächsten Sommer.</p>
+                <p>Das Mesnerhaus liegt direkt unterhalb der Wallfahrtskirche zur Heiligen Dreifaltigkeit, auf 731 Metern, mit weitem Blick über die Oberpfalz. Seit über 20 Jahren führen wir es als Familienbetrieb.</p>
+                <p>Gekocht wird bei uns frisch und von Hand, mit vielen Zutaten aus der Region. Zum Kaffee gibt es selbstgebackene Kuchen und Torten.</p>
+                <blockquote className="border-l-2 border-[var(--color-brand)] pl-4 italic">
+                  „Das Essen war einfach der Hammer. Sehr lecker, wie bei Oma. Portionen sind ausreichend und die Preise sind sehr fair.“
+                  <footer className="not-italic text-xs text-[var(--color-muted)] mt-1.5">Matthias G., Google-Bewertung</footer>
+                </blockquote>
               </ScrollReveal>
               <ScrollReveal delay={400}>
                 <a href="#menu" className="inline-block mt-7 px-7 py-3.5 bg-[var(--color-brand)] text-white rounded-full text-sm font-bold tracking-wide hover:bg-[var(--color-brand-dark)] transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
@@ -265,7 +280,7 @@ export default function Home() {
             <ScrollReveal className="text-center mb-10 md:mb-14">
               <SectionLabel>Warum Mesnerhaus</SectionLabel>
               <h2 className="text-3xl md:text-4xl text-[var(--color-dark)]" style={{ fontFamily: "var(--font-playfair)" }}>
-                Vier Dinge, die Sie sonst kaum finden
+                Darum kommen unsere Gäste wieder
               </h2>
             </ScrollReveal>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 md:gap-7">
@@ -292,7 +307,7 @@ export default function Home() {
             <ScrollReveal className="text-center mb-10 md:mb-14">
               <SectionLabel>Einblicke</SectionLabel>
               <h2 className="text-3xl md:text-4xl text-[var(--color-dark)]" style={{ fontFamily: "var(--font-playfair)" }}>
-                Bilder sagen mehr als Worte
+                So sieht ein Sonntag am Armesberg aus
               </h2>
             </ScrollReveal>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
@@ -305,6 +320,7 @@ export default function Home() {
                       className="w-full h-full object-cover" loading="lazy" width={900} height={506} />
                   </picture>
                 </div>
+                <p className="mt-2 text-xs md:text-sm text-[var(--color-mid)] text-center">Die Landschaft rund um den Armesberg</p>
               </ScrollReveal>
               {/* abend photo */}
               <ScrollReveal direction="right" delay={100}>
@@ -315,6 +331,7 @@ export default function Home() {
                       className="w-full h-full object-cover object-[center_40%]" loading="lazy" width={480} height={480} />
                   </picture>
                 </div>
+                <p className="mt-2 text-xs md:text-sm text-[var(--color-mid)] text-center">Abendstimmung am Armesberg</p>
               </ScrollReveal>
               {/* terrasse */}
               <ScrollReveal direction="right" delay={160}>
@@ -325,6 +342,7 @@ export default function Home() {
                       className="w-full h-full object-cover" loading="lazy" width={480} height={480} />
                   </picture>
                 </div>
+                <p className="mt-2 text-xs md:text-sm text-[var(--color-mid)] text-center">Die Terrasse, zum Teil überdacht</p>
               </ScrollReveal>
               {/* essen 1 */}
               <ScrollReveal direction="up" delay={80}>
@@ -335,6 +353,7 @@ export default function Home() {
                       className="w-full h-full object-cover" loading="lazy" width={480} height={480} />
                   </picture>
                 </div>
+                <p className="mt-2 text-xs md:text-sm text-[var(--color-mid)] text-center">Frisch gekocht, von Hand</p>
               </ScrollReveal>
               {/* essen 2 — spans 2 cols on mobile to fill grid */}
               <ScrollReveal direction="up" delay={130} className="col-span-1 md:col-span-1">
@@ -345,6 +364,7 @@ export default function Home() {
                       className="w-full h-full object-cover" loading="lazy" width={480} height={480} />
                   </picture>
                 </div>
+                <p className="mt-2 text-xs md:text-sm text-[var(--color-mid)] text-center">Braten mit Bratkartoffeln</p>
               </ScrollReveal>
             </div>
           </div>
@@ -362,7 +382,7 @@ export default function Home() {
               </ScrollReveal>
               <ScrollReveal delay={180}>
                 <p className="text-[var(--color-mid)] max-w-lg mx-auto mt-3 text-sm md:text-base">
-                  Bodenständige bayerische Küche, hausgemacht und mit regionalen Zutaten. Die Karte wechselt jede Woche, je nach Saison und Markt.
+                  Bodenständige bayerische Küche, frisch und von Hand gekocht. Typisch bei uns: Braten, Wild, Fisch und hausgemachte Kuchen. Die Karte wechselt jede Woche.
                 </p>
               </ScrollReveal>
             </div>
@@ -390,10 +410,12 @@ export default function Home() {
               style={{ fontFamily: "var(--font-great-vibes)", textShadow: "0 4px 24px rgba(0,0,0,.4)" }}>
               Bodenständig gut.
             </h2>
-            <p className="text-base md:text-lg text-white/70 italic max-w-sm mx-auto mb-8"
-              style={{ fontFamily: "var(--font-playfair)" }}>
-              „Ein Platz, den man nicht so schnell vergisst.&ldquo;
-            </p>
+            <figure className="max-w-md mx-auto mb-8">
+              <blockquote className="text-base md:text-lg text-white/85 italic" style={{ fontFamily: "var(--font-playfair)" }}>
+                „Der Biergarten mit dem tollen Ausblick ist einmalig schön, wie Urlaub.&ldquo;
+              </blockquote>
+              <figcaption className="text-xs text-white/60 mt-2 tracking-wide">Kerstin S., Google-Bewertung</figcaption>
+            </figure>
             <a href={TEL_HREF}
               className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-[var(--color-brand)] text-white font-bold text-sm hover:bg-[var(--color-brand-dark)] transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
               style={{ boxShadow: "0 8px 32px rgba(141,180,58,.4)" }}>
@@ -476,21 +498,21 @@ export default function Home() {
               <ScrollReveal delay={160}>
                 <h2 className="text-3xl md:text-5xl text-[var(--color-dark)] mb-4 leading-tight"
                   style={{ fontFamily: "var(--font-playfair)" }}>
-                  Ihr Fest.<br />Unsere Küche.
+                  Feiern mit Weitblick<br />für bis zu 60 Gäste
                 </h2>
               </ScrollReveal>
               <ScrollReveal delay={240}><Divider /></ScrollReveal>
               <ScrollReveal delay={300} className="mt-5 text-[var(--color-mid)] leading-relaxed text-sm md:text-base space-y-4">
-                <p>Ob Geburtstag, Betriebsfeier, Taufe oder Wandergruppe — das Mesnerhaus bietet den passenden Rahmen für Ihren besonderen Anlass.</p>
-                <p>Wir reservieren für Sie unsere Gasträume exklusiv, stellen eine individuelle Speisekarte zusammen und sorgen dafür, dass Ihre Gäste sich rundum wohlfühlen.</p>
+                <p>Geburtstag, Taufe, Betriebsfeier oder Wandergruppe: Im Mesnerhaus feiern Sie mit Blick über die Oberpfalz.</p>
+                <p>Wir reservieren die Gasträume exklusiv für Sie, auch an anderen Tagen als sonntags, und stellen das Menü gemeinsam mit Ihnen zusammen.</p>
               </ScrollReveal>
               <ScrollReveal delay={360}>
                 <ul className="mt-5 space-y-2.5">
                   {[
-                    "Bis zu 60 Gäste möglich",
-                    "Individuell abgestimmte Menüs",
-                    "Terrasse & Innenräume buchbar",
-                    "Wandergruppen & Vereine willkommen",
+                    "Bis zu 60 Gäste, Gasträume exklusiv",
+                    "Auch außerhalb der Öffnungszeiten nach Absprache",
+                    "Menü nach Ihren Wünschen",
+                    "Kaffee und hausgemachte Kuchen für den Nachmittag",
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-2.5 text-sm md:text-base text-[var(--color-mid)]">
                       <svg width="16" height="16" viewBox="0 0 20 20" fill="none" className="mt-0.5 shrink-0 text-[var(--color-brand)]">
@@ -526,7 +548,7 @@ export default function Home() {
               </ScrollReveal>
               <ScrollReveal delay={180}>
                 <p className="text-[var(--color-mid)] max-w-xl mx-auto mt-3 text-sm md:text-base">
-                  Der Armesberg ist das Wanderziel — das Mesnerhaus ist die verdiente Belohnung danach.
+                  Wandern Sie auf den Armesberg und kehren Sie danach bei uns ein. Diese Dinge erwarten Sie vor Ort.
                 </p>
               </ScrollReveal>
             </div>
@@ -535,32 +557,32 @@ export default function Home() {
                 {
                   icon: "church",
                   title: "Dreifaltigkeitskirche",
-                  body: "Direkt neben dem Mesnerhaus — eine der schönsten Wallfahrtskirchen der Oberpfalz mit weitem Blick über das Land.",
+                  body: "Die Wallfahrtskirche zur Heiligen Dreifaltigkeit steht direkt neben dem Mesnerhaus, auf dem Gipfel des Armesbergs.",
                 },
                 {
                   icon: "boot",
                   title: "Wanderwege ab Haus",
-                  body: "Mehrere markierte Wanderwege starten direkt am Parkplatz. Für Einsteiger wie für geübte Wanderer. Rast inklusive.",
+                  body: "Markierte Wanderwege starten direkt am Parkplatz, für Einsteiger wie für geübte Wanderer.",
                 },
                 {
                   icon: "bike",
                   title: "Radfahrer willkommen",
-                  body: "Das Mesnerhaus liegt direkt an populären Radrouten durch die Oberpfälzer Alb. Fahrradständer und Erfrischung vorhanden.",
+                  body: "Fahrradständer direkt am Haus. Nach dem Anstieg auf den Armesberg gibt es bei uns eine Stärkung.",
                 },
                 {
                   icon: "sunrise",
                   title: "Aussichtspunkt",
-                  body: "Bei klarem Wetter reicht der Blick vom Armesberg über die gesamte Oberpfalz bis zu den Alpen. Unvergleichlich.",
+                  body: "Vom Armesberg auf 731 Metern reicht der Blick bei klarem Wetter weit über die Oberpfalz.",
                 },
                 {
                   icon: "child",
                   title: "Mit Kindern",
-                  body: "Geeignete Wanderwege für Familien mit Kindern, genug Platz zum Toben, bodenständiges Essen — ein Ausflug, den Kinder lieben.",
+                  body: "Genug Platz zum Toben, während die Großen noch beim Kaffee sitzen. Wanderwege starten direkt am Haus.",
                 },
                 {
-                  icon: "car",
-                  title: "Kostenlos Parken",
-                  body: "Ausreichend kostenlose Parkplätze direkt am Haus. Navi: Armesberg 2, 95508 Kulmain.",
+                  icon: "beer",
+                  title: "Biergarten mit Pager",
+                  body: "Im Biergarten bestellen Sie selbst an der Ausgabe. Ein Pager meldet sich, sobald Ihr Essen fertig ist.",
                 },
               ] as { icon: IconName; title: string; body: string }[]).map(({ icon, title, body }, i) => (
                 <ScrollReveal key={title} delay={i * 70}>
@@ -619,7 +641,7 @@ export default function Home() {
               <SectionLabel>Öffnungszeiten</SectionLabel>
               <h2 className="text-2xl md:text-4xl text-[var(--color-dark)] mb-7"
                 style={{ fontFamily: "var(--font-playfair)" }}>
-                Wann wir für Sie da sind
+                Jeden Sonntag von 11 bis 17 Uhr
               </h2>
               <HoursTable />
               <p className="mt-5 text-xs text-[var(--color-muted)] leading-relaxed">
@@ -763,10 +785,10 @@ export default function Home() {
             <Image src="/logo-icon.svg" alt="" width={56} height={56} className="mx-auto mb-5 opacity-80" />
             <h2 className="text-3xl md:text-5xl text-white mb-3"
               style={{ fontFamily: "var(--font-playfair)" }}>
-              Ihr Tisch wartet auf Sie.
+              Diesen Sonntag auf den Armesberg?
             </h2>
             <p className="text-white/70 max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
-              Reservieren Sie jetzt kostenlos und unverbindlich, per Anruf oder WhatsApp. Sonntage sind schnell voll.
+              Sonntags ist es oft voll. Reservieren Sie Ihren Tisch kostenlos per Anruf oder WhatsApp.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a href={TEL_HREF}

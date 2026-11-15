@@ -34,11 +34,11 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   title: "Mesnerhaus – Ausflugsgaststätte am Armesberg",
   description:
-    "Herzlich willkommen im Mesnerhaus am Armesberg. Bodenständige Küche, frische Zutaten und ein herrlicher Blick auf die Dreifaltigkeitskirche.",
+    "Sonntags 11–17 Uhr: hausgemachte Küche, selbstgebackene Kuchen und Weitblick am Armesberg bei Kulmain. Jetzt Tisch reservieren.",
   openGraph: {
     title: "Mesnerhaus – Ausflugsgaststätte am Armesberg",
     description:
-      "Bodenständige Küche am Fuße der Dreifaltigkeitskirche. Genuss mit Panorama.",
+      "Sonntags auf den Armesberg: hausgemachte Küche, Kuchen und Weitblick über die Oberpfalz.",
     locale: "de_DE",
     url: SITE_URL,
     images: ["/images/panorama-1400.webp"],

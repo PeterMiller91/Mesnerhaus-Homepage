@@ -14,7 +14,7 @@ export default function SiteFooter() {
                 <Image src="/logo-icon.svg" alt="" width={38} height={38} />
                 <span className="text-3xl text-white" style={{ fontFamily: "var(--font-great-vibes)" }}>Mesnerhaus</span>
               </div>
-              <p className="text-sm text-white/60 leading-relaxed">Ausflugsgaststätte am Armesberg.<br />Bodenständig gut. Hoch oben am Berg.</p>
+              <p className="text-sm text-white/60 leading-relaxed">Ausflugsgaststätte am Armesberg.<br />Hausgemachte Küche und Kuchen mit Weitblick.</p>
             </div>
 
             <div>

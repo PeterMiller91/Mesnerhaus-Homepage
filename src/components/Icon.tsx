@@ -37,6 +37,7 @@ const paths = {
   pen: <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />,
   route: <><circle cx="6" cy="19" r="2.5" /><circle cx="18" cy="5" r="2.5" /><path d="M8.5 19H17a3.5 3.5 0 0 0 0-7H7a3.5 3.5 0 0 1 0-7h8.5" /></>,
   check: <path d="M20 6L9 17l-5-5" />,
+  cake: <><path d="M4 21h16M5 21v-7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v7" /><path d="M5 16c1.2 1 2.3 1 3.5 0s2.3-1 3.5 0 2.3 1 3.5 0 2.3-1 3.5 0" /><path d="M12 12V8M12 5.5c.8-.6 1-1.5.5-2.5-.5 1-1.6 1.2-1.6 2.2 0 .7.5 1.3 1.1 1.3" /></>,
 } as const;
 
 export type IconName = keyof typeof paths;
