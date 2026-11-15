@@ -52,7 +52,7 @@ function Wave({ from, to }: { from: string; to: string }) {
 /* ─── data ───────────────────────────────────────────── */
 const stats = [
   { value: "731 m",          label: "Höhe über NN" },
-  { value: "Seit\nJahrzehnten", label: "Familienbetrieb" },
+  { value: "Seit\nJahr\u00ADzehnten", label: "Familienbetrieb" },
   { value: "Täglich\nfrisch", label: "Regionale Küche" },
 ];
 
@@ -201,12 +201,15 @@ export default function Home() {
 
         {/* ════════════ STATS ═══════════════════════════ */}
         <section className="py-14 md:py-16 px-5" style={{ background: "linear-gradient(135deg, #2d4a0e 0%, #3d6318 50%, #527a1f 100%)" }}>
-          <div className="max-w-4xl mx-auto grid grid-cols-3 gap-4 md:gap-8">
+          <div className="max-w-4xl mx-auto grid grid-cols-3 gap-2 sm:gap-4 md:gap-8 items-stretch">
             {stats.map(({ value, label }, i) => (
-              <ScrollReveal key={label} delay={i * 120} className="text-center">
-                <p className="text-2xl md:text-4xl font-bold text-white leading-tight mb-1 whitespace-pre-line"
-                  style={{ fontFamily: "var(--font-playfair)" }}>{value}</p>
-                <p className="text-[0.6rem] md:text-xs font-bold tracking-[0.2em] uppercase text-white/55">{label}</p>
+              <ScrollReveal key={label} delay={i * 120} className="text-center min-w-0 h-full">
+                {/* Wert unten ausgerichtet, damit alle Beschriftungen auf einer Linie stehen */}
+                <div className="h-full flex flex-col justify-end items-center gap-1.5">
+                  <p className="text-[1.3rem] leading-[1.15] sm:text-3xl md:text-4xl font-bold text-white whitespace-pre-line hyphens-manual break-words max-w-full"
+                    style={{ fontFamily: "var(--font-playfair)" }}>{value}</p>
+                  <p className="text-[0.55rem] sm:text-[0.65rem] md:text-xs font-bold tracking-[0.12em] sm:tracking-[0.2em] uppercase text-white/60 leading-snug">{label}</p>
+                </div>
               </ScrollReveal>
             ))}
           </div>
