@@ -79,6 +79,21 @@ const benefits: { icon: IconName; title: string; body: string }[] = [
   },
 ];
 
+type GalleryItem = { base: string; src: { small: number; large?: number }; alt: string; caption: string; wide?: boolean; pos?: string };
+const gallery: GalleryItem[] = [
+  { base: "panorama",        src: { small: 900, large: 1400 }, wide: true, alt: "Landschaft rund um den Armesberg", caption: "Die Landschaft rund um den Armesberg" },
+  { base: "gaststube-ecke",  src: { small: 387 },              alt: "Gemütliche Ecke in der Gaststube mit Kerze und Blumen", caption: "Gemütlich in der Gaststube" },
+  { base: "krustenbraten",   src: { small: 480, large: 800 },  alt: "Schweinebraten mit knuspriger Kruste", caption: "Schweinebraten mit Kruste" },
+  { base: "braten-knoedel",  src: { small: 480, large: 800 },  alt: "Braten mit Soße, Kartoffelknödeln und Blaukraut", caption: "Braten mit Knödeln und Blaukraut" },
+  { base: "terrasse",        src: { small: 480, large: 800 },  alt: "Terrasse des Mesnerhaus mit Blick ins Land", caption: "Die Terrasse, zum Teil überdacht" },
+  { base: "salat",           src: { small: 480, large: 800 },  alt: "Bunter Salatteller mit Ei, Karotten und Radieschen", caption: "Frischer Salatteller" },
+  { base: "kuechle",         src: { small: 480, large: 800 },  alt: "Selbstgebackene Küchle", caption: "Selbstgebackene Küchle" },
+  { base: "eisbecher",       src: { small: 480, large: 800 },  alt: "Eisbecher mit Karamell und Waffel", caption: "Eisbecher mit Karamell", pos: "center 35%" },
+  { base: "abend",           src: { small: 480, large: 800 },  alt: "Abendstimmung am Armesberg", caption: "Abendstimmung am Armesberg", pos: "center 40%" },
+  { base: "essen1",          src: { small: 480, large: 800 },  alt: "Hausgemachtes Gericht mit Bratkartoffeln und Salat", caption: "Frisch gekocht, von Hand" },
+  { base: "essen2",          src: { small: 480, large: 800 },  alt: "Braten mit Bratkartoffeln", caption: "Braten mit Bratkartoffeln" },
+];
+
 const faqs = [
   {
     q: "Haben Sie nur sonntags geöffnet?",
@@ -311,61 +326,21 @@ export default function Home() {
               </h2>
             </ScrollReveal>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-              {/* large panorama spans 2 cols */}
-              <ScrollReveal direction="left" delay={0} className="col-span-2">
-                <div className="img-zoom-wrap rounded-2xl overflow-hidden aspect-[16/9] shadow-md">
-                  <picture>
-                    <source media="(min-width:900px)" srcSet="/images/panorama-1400.webp" />
-                    <img src="/images/panorama-900.webp" alt="Panoramablick vom Armesberg"
-                      className="w-full h-full object-cover" loading="lazy" width={900} height={506} />
-                  </picture>
-                </div>
-                <p className="mt-2 text-xs md:text-sm text-[var(--color-mid)] text-center">Die Landschaft rund um den Armesberg</p>
-              </ScrollReveal>
-              {/* abend photo */}
-              <ScrollReveal direction="right" delay={100}>
-                <div className="img-zoom-wrap rounded-2xl overflow-hidden aspect-square shadow-md">
-                  <picture>
-                    <source media="(min-width:600px)" srcSet="/images/abend-800.webp" />
-                    <img src="/images/abend-480.webp" alt="Abendstimmung am Armesberg"
-                      className="w-full h-full object-cover object-[center_40%]" loading="lazy" width={480} height={480} />
-                  </picture>
-                </div>
-                <p className="mt-2 text-xs md:text-sm text-[var(--color-mid)] text-center">Abendstimmung am Armesberg</p>
-              </ScrollReveal>
-              {/* terrasse */}
-              <ScrollReveal direction="right" delay={160}>
-                <div className="img-zoom-wrap rounded-2xl overflow-hidden aspect-square shadow-md">
-                  <picture>
-                    <source media="(min-width:600px)" srcSet="/images/terrasse-800.webp" />
-                    <img src="/images/terrasse-480.webp" alt="Terrasse des Mesnerhaus"
-                      className="w-full h-full object-cover" loading="lazy" width={480} height={480} />
-                  </picture>
-                </div>
-                <p className="mt-2 text-xs md:text-sm text-[var(--color-mid)] text-center">Die Terrasse, zum Teil überdacht</p>
-              </ScrollReveal>
-              {/* essen 1 */}
-              <ScrollReveal direction="up" delay={80}>
-                <div className="img-zoom-wrap rounded-2xl overflow-hidden aspect-square shadow-md">
-                  <picture>
-                    <source media="(min-width:600px)" srcSet="/images/essen1-800.webp" />
-                    <img src="/images/essen1-480.webp" alt="Hausgemachte Küche"
-                      className="w-full h-full object-cover" loading="lazy" width={480} height={480} />
-                  </picture>
-                </div>
-                <p className="mt-2 text-xs md:text-sm text-[var(--color-mid)] text-center">Frisch gekocht, von Hand</p>
-              </ScrollReveal>
-              {/* essen 2 — spans 2 cols on mobile to fill grid */}
-              <ScrollReveal direction="up" delay={130} className="col-span-1 md:col-span-1">
-                <div className="img-zoom-wrap rounded-2xl overflow-hidden aspect-square shadow-md">
-                  <picture>
-                    <source media="(min-width:600px)" srcSet="/images/essen2-800.webp" />
-                    <img src="/images/essen2-480.webp" alt="Bratkartoffeln mit Braten"
-                      className="w-full h-full object-cover" loading="lazy" width={480} height={480} />
-                  </picture>
-                </div>
-                <p className="mt-2 text-xs md:text-sm text-[var(--color-mid)] text-center">Braten mit Bratkartoffeln</p>
-              </ScrollReveal>
+              {gallery.map(({ base, wide, src, alt, caption, pos }, i) => (
+                <ScrollReveal key={base} delay={(i % 4) * 70} className={wide ? "col-span-2" : ""}>
+                  <figure>
+                    <div className={`img-zoom-wrap rounded-2xl overflow-hidden shadow-md ${wide ? "aspect-[16/9]" : "aspect-square"}`}>
+                      <picture>
+                        {src.large && <source media="(min-width:600px)" srcSet={`/images/${base}-${src.large}.webp`} />}
+                        <img src={`/images/${base}-${src.small}.webp`} alt={alt}
+                          className="w-full h-full object-cover" style={pos ? { objectPosition: pos } : undefined}
+                          loading="lazy" width={480} height={480} />
+                      </picture>
+                    </div>
+                    <figcaption className="mt-2 text-xs md:text-sm text-[var(--color-mid)] text-center">{caption}</figcaption>
+                  </figure>
+                </ScrollReveal>
+              ))}
             </div>
           </div>
         </section>
@@ -486,9 +461,8 @@ export default function Home() {
             <ScrollReveal direction="right" className="order-first md:order-last relative">
               <div className="img-zoom-wrap rounded-2xl overflow-hidden shadow-xl aspect-[4/3]">
                 <picture>
-                  <source media="(min-width:800px)" srcSet="/images/terrasse-800.webp" />
-                  <img src="/images/terrasse-480.webp" alt="Terrasse für Feiern"
-                    className="w-full h-full object-cover" loading="lazy" width={800} height={600} />
+                  <img src="/images/gaststube-tische-515.webp" alt="Festlich gedeckte Tische in der Gaststube des Mesnerhaus"
+                    className="w-full h-full object-cover" loading="lazy" width={515} height={388} />
                 </picture>
               </div>
             </ScrollReveal>
@@ -552,7 +526,22 @@ export default function Home() {
                 </p>
               </ScrollReveal>
             </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-7">
+            <div className="grid lg:grid-cols-[minmax(0,360px)_1fr] gap-5 md:gap-7 items-stretch">
+              <ScrollReveal direction="left" className="h-full">
+                <figure className="h-full flex flex-col">
+                  <div className="img-zoom-wrap rounded-2xl overflow-hidden shadow-md aspect-[4/3] sm:aspect-[16/10] lg:aspect-auto lg:flex-1 lg:min-h-[420px]">
+                    <picture>
+                      <source media="(min-width:600px)" srcSet="/images/kirche-800.webp" />
+                      <img src="/images/kirche-480.webp" alt="Wallfahrtskirche zur Heiligen Dreifaltigkeit auf dem Armesberg"
+                        className="w-full h-full object-cover object-[center_30%]" loading="lazy" width={800} height={1422} />
+                    </picture>
+                  </div>
+                  <figcaption className="mt-2 text-xs md:text-sm text-[var(--color-mid)] text-center">
+                    Die Wallfahrtskirche zur Heiligen Dreifaltigkeit, direkt neben dem Mesnerhaus
+                  </figcaption>
+                </figure>
+              </ScrollReveal>
+            <div className="grid sm:grid-cols-2 gap-5 md:gap-7 min-w-0">
               {([
                 {
                   icon: "church",
@@ -595,6 +584,7 @@ export default function Home() {
                   </div>
                 </ScrollReveal>
               ))}
+            </div>
             </div>
             <div className="grid md:grid-cols-2 gap-5 md:gap-7 mt-5 md:mt-7">
               <ScrollReveal delay={80}><WeatherWidget /></ScrollReveal>
