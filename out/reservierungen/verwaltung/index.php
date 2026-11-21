@@ -71,8 +71,8 @@ function shell(string $title, string $body, bool $app = false): void {
        . '<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#3D5C15">'
        . '<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="/icon.svg" type="image/svg+xml">'
        . '<link rel="apple-touch-icon" href="/apple-icon.png"><meta name="apple-mobile-web-app-title" content="Reservierungen">'
-       . '<title>' . h($title) . '</title><link rel="stylesheet" href="app.css?v=1"></head><body>' . $body
-       . ($app ? '<script src="app.js?v=1"></script>' : '') . '</body></html>';
+       . '<title>' . h($title) . '</title><link rel="stylesheet" href="app.css?v=2"></head><body>' . $body
+       . ($app ? '<script src="app.js?v=2"></script>' : '') . '</body></html>';
 }
 
 if (!$me) {
@@ -102,6 +102,7 @@ if (!$me) {
 }
 
 /* ── App ─────────────────────────────────────────────────────── */
-$boot = json_encode(['csrf' => $_SESSION['csrf'], 'user' => $me, 'today' => date('Y-m-d')], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP);
+$startDay = (string)($_GET['day'] ?? '');
+$boot = json_encode(['csrf' => $_SESSION['csrf'], 'user' => $me, 'today' => date('Y-m-d'), 'day' => rv_valid_date($startDay) ? $startDay : date('Y-m-d')], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP);
 shell('Reservierungen', '<div id="app" data-boot="' . h((string)$boot) . '"><p class="loading">Lädt …</p></div>
 <form id="logout" method="post" hidden><input type="hidden" name="do" value="logout"><input type="hidden" name="csrf" value="' . h((string)$_SESSION['csrf']) . '"></form>', true);

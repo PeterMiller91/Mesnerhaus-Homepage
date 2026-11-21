@@ -4,7 +4,7 @@
   var root = document.getElementById('app');
   var boot = JSON.parse(root.getAttribute('data-boot'));
   var isAdmin = boot.user.role === 'admin';
-  var S = { date: boot.today, data: null, menu: false, view: 'liste', planTime: null, area: null, assign: null, edit: null, sel: null };
+  var S = { date: boot.day || boot.today, data: null, menu: false, view: 'liste', planTime: null, area: null, assign: null, edit: null, sel: null };
   try { if (localStorage.getItem('mh-view') === 'plan') S.view = 'plan'; } catch { /* egal */ }
 
   /* ── Helfer ─────────────────────────────────────────────── */
@@ -73,6 +73,7 @@
         '<div class="menu"><button class="icon-btn" data-act="menu" aria-label="Menü" aria-expanded="' + S.menu + '">' + ico('menu') + '</button>' +
           (S.menu ? '<div class="menu-list" role="menu"><div class="who">Angemeldet als <b>' + esc(boot.user.name) + '</b></div>' +
             (isAdmin ? '<button role="menuitem" data-act="settings">Einstellungen</button><button role="menuitem" data-act="templates">E-Mail-Vorlagen</button>' : '') +
+            '<button role="menuitem" data-act="push">Benachrichtigungen</button>' +
             '<button role="menuitem" data-act="print">Tagesliste drucken</button>' +
             '<button role="menuitem" data-act="password">Passwort ändern</button>' +
             '<button role="menuitem" data-act="logout">Abmelden</button></div>' : '') +
@@ -657,6 +658,115 @@
     return false;
   }
 
+  /* ── Push-Benachrichtigungen ───────────────────────────── */
+  var SW = null;
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js', { scope: './' }).then(function (reg) { SW = reg; }).catch(function () { /* egal */ });
+  }
+  function b64uToBytes(s) {
+    var pad = '='.repeat((4 - s.length % 4) % 4), b = atob((s + pad).replace(/-/g, '+').replace(/_/g, '/'));
+    var out = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) out[i] = b.charCodeAt(i); return out;
+  }
+  function sha256hex(str) {
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str)).then(function (buf) {
+      return Array.prototype.map.call(new Uint8Array(buf), function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+    });
+  }
+  function deviceLabel() {
+    var ua = navigator.userAgent;
+    var dev = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android-Handy' : /Mac/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows-PC' : 'Gerät';
+    var br = /Edg\//.test(ua) ? 'Edge' : /Firefox\//.test(ua) ? 'Firefox' : /Chrome\//.test(ua) ? 'Chrome' : /Safari\//.test(ua) ? 'Safari' : '';
+    return dev + (br ? ' · ' + br : '');
+  }
+  function isIOS() { return /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+  function isStandalone() { return (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+
+  function openPush() {
+    var supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    Promise.all([
+      api('GET', null, '?push'),
+      supported && SW ? SW.pushManager.getSubscription() : Promise.resolve(null)
+    ]).then(function (res) {
+      var j = res[0], sub = res[1];
+      return (sub ? sha256hex(sub.endpoint) : Promise.resolve('')).then(function (myHash) { show(j, sub, myHash); });
+    });
+
+    function show(j, sub, myHash) {
+      var here = j.devices.filter(function (d) { return d.endpoint_hash === myHash; })[0];
+      var intro = '<p class="hint">Bei jeder <b>neuen Online-Reservierung</b> (und auf Wunsch bei Stornos) klingelt das Handy, auch wenn die App geschlossen ist.</p>';
+      var state = '';
+      if (!j.available) state = '<p class="alert err">Auf dem Server fehlt die Verschlüsselung (OpenSSL). Bitte melden.</p>';
+      else if (isIOS() && !isStandalone()) {
+        state = '<div class="alert err"><b>Auf dem iPhone zuerst zum Home-Bildschirm hinzufügen:</b><br>' +
+          '1. In Safari unten auf <b>Teilen</b> tippen (Quadrat mit Pfeil).<br>2. <b>„Zum Home-Bildschirm“</b> wählen.<br>' +
+          '3. Die App über das neue Symbol öffnen, anmelden und hier „Aktivieren“ tippen.<br><small>Benötigt iOS 16.4 oder neuer.</small></div>';
+      } else if (!supported) state = '<p class="alert err">Dieser Browser kann keine Push-Benachrichtigungen. Bitte Chrome (Android) oder die Verknüpfung auf dem iPhone-Home-Bildschirm nutzen.</p>';
+      else if (Notification.permission === 'denied') state = '<p class="alert err">Benachrichtigungen sind für diese Seite blockiert. Bitte in den Handy-Einstellungen für diese App bzw. Seite erlauben, dann hier erneut öffnen.</p>';
+      else if (here) state = '<p class="alert ok"><b>Dieses Gerät ist aktiviert</b> (' + esc(here.label) + ').</p>';
+      else state = '<p class="hint"><b>Dieses Gerät</b> ist noch nicht aktiviert.</p>';
+
+      var prefs = here ? here.prefs : { neu: true, storno: true };
+      var prefHtml = '<fieldset><legend>Benachrichtigen bei</legend>' +
+        '<label class="check"><input type="checkbox" data-pref="neu"' + (prefs.neu ? ' checked' : '') + '> neuer Online-Reservierung</label>' +
+        '<label class="check"><input type="checkbox" data-pref="storno"' + (prefs.storno ? ' checked' : '') + '> Storno durch den Gast</label></fieldset>';
+      var list = j.devices.length ? '<fieldset><legend>Deine Geräte</legend>' + j.devices.map(function (d) {
+        return '<div class="grid2" style="align-items:center"><span>' + esc(d.label) + (d.endpoint_hash === myHash ? ' <b>(dieses)</b>' : '') +
+          '<br><small class="muted">seit ' + esc(new Date(d.created).toLocaleDateString('de-DE')) + (d.last_error ? ' · letzter Versand fehlgeschlagen' : '') + '</small></span>' +
+          '<button type="button" class="btn small danger" data-rm="' + esc(d.endpoint_hash) + '">Entfernen</button></div>';
+      }).join('') + '</fieldset>' : '';
+
+      var canAct = j.available && supported && !(isIOS() && !isStandalone()) && Notification.permission !== 'denied';
+      var foot = (here ? '<button type="button" class="btn ghost" data-test>Test senden</button>' : '') + '<span style="flex:1"></span>' +
+        '<button type="button" class="btn ghost" data-close2>Schließen</button>' +
+        (canAct ? (here ? '<button type="button" class="btn primary" data-saveprefs>Speichern</button>' : '<button type="button" class="btn primary" data-on>Auf diesem Gerät aktivieren</button>') : '');
+      var dlg = dialog('Benachrichtigungen', intro + state + prefHtml + list + '<p class="alert" data-res hidden></p>', foot);
+      var res = $('[data-res]', dlg);
+      var say = function (t, ok) { res.textContent = t; res.className = 'alert ' + (ok ? 'ok' : 'err'); res.hidden = false; };
+      var readPrefs = function () { return { neu: $('[data-pref=neu]', dlg).checked, storno: $('[data-pref=storno]', dlg).checked }; };
+      $('[data-close2]', dlg).addEventListener('click', function () { dlg.close(); });
+
+      if ($('[data-on]', dlg)) $('[data-on]', dlg).addEventListener('click', function (e) {
+        var b = e.currentTarget; b.disabled = true; b.textContent = 'Wird aktiviert …';
+        Notification.requestPermission().then(function (perm) {
+          if (perm !== 'granted') throw new Error('Ohne Erlaubnis kann das Handy keine Benachrichtigungen zeigen.');
+          return (SW ? Promise.resolve(SW) : navigator.serviceWorker.register('sw.js', { scope: './' })).then(function (reg) {
+            SW = reg;
+            return navigator.serviceWorker.ready.then(function () {
+              return reg.pushManager.getSubscription().then(function (old) {
+                return old || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uToBytes(j.public_key) });
+              });
+            });
+          });
+        }).then(function (s2) {
+          return api('POST', { action: 'push_subscribe', endpoint: s2.endpoint, label: deviceLabel(), prefs: readPrefs() });
+        }).then(function (r) {
+          if (!r.ok) throw new Error(r.message || 'Speichern fehlgeschlagen.');
+          return api('POST', { action: 'push_test' });
+        }).then(function (r) {
+          dlg.close(); toast('Aktiviert. ' + (r.ok ? 'Eine Test-Benachrichtigung ist unterwegs.' : ''));
+        }).catch(function (err) {
+          b.disabled = false; b.textContent = 'Auf diesem Gerät aktivieren';
+          say((err && err.message) || 'Aktivieren hat nicht geklappt.', false);
+        });
+      });
+      if ($('[data-saveprefs]', dlg)) $('[data-saveprefs]', dlg).addEventListener('click', function () {
+        api('POST', { action: 'push_prefs', endpoint_hash: myHash, prefs: readPrefs() }).then(function (r) { if (r.ok) { dlg.close(); toast('Gespeichert'); } else say('Speichern fehlgeschlagen.', false); });
+      });
+      if ($('[data-test]', dlg)) $('[data-test]', dlg).addEventListener('click', function () {
+        api('POST', { action: 'push_test' }).then(function (r) { say(r.message, r.ok); });
+      });
+      $$('[data-rm]', dlg).forEach(function (b) {
+        b.addEventListener('click', function () {
+          var h = b.dataset.rm;
+          var after = function () { dlg.close(); toast('Gerät entfernt'); };
+          api('POST', { action: 'push_remove', endpoint_hash: h }).then(function () {
+            if (h === myHash && sub) sub.unsubscribe().then(after, after); else after();
+          });
+        });
+      });
+    }
+  }
+
   /* ── Klicks ─────────────────────────────────────────────── */
   root.addEventListener('click', function (e) {
     var t = e.target.closest('button,[data-day]');
@@ -681,6 +791,7 @@
     else if (act === 'settings') { render(); openSettings(); }
     else if (act === 'templates') { render(); openTemplates(); }
     else if (act === 'password') { render(); openPassword(); }
+    else if (act === 'push') { render(); openPush(); }
     else if (act === 'logout') document.getElementById('logout').submit();
     else if (act === 'seenall') api('POST', { action: 'seen', ids: S.data.unseen.map(function (u) { return u.id; }) }).then(function () { load(); });
   });

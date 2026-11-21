@@ -99,11 +99,13 @@ $result = rv_with_lock(function () use ($s, $date, $time, $persons, $name, $phon
 if ($result === null) out(409, ['ok' => false, 'full' => true, 'message' => 'Diese Uhrzeit ist gerade ausgebucht. Bitte wählen Sie eine andere.']);
 if ($result === false) out(500, ['ok' => false, 'message' => 'Speichern fehlgeschlagen. Bitte rufen Sie uns an.']);
 
-$mailed = rv_mail_guest_confirm($result);
-rv_mail_owner($result, 'Neue Online-Reservierung');
-
-out(200, [
+// Antwort sofort an den Gast, E-Mails und Push danach (der Gast wartet nicht auf den Versand)
+rv_finish_response((string)json_encode([
     'ok' => true,
     'message' => 'Ihr Tisch ist reserviert: ' . rv_date_de($date) . ' um ' . $time . ' Uhr für ' . $persons . ($persons === 1 ? ' Person.' : ' Personen.'),
-    'mailed' => $mailed,
-]);
+    'mailed' => true,
+], JSON_UNESCAPED_UNICODE));
+rv_mail_guest_confirm($result);
+rv_mail_owner($result, 'Neue Online-Reservierung');
+rv_push_notify('neu', 'Neue Reservierung', rv_date_de($date) . ', ' . $time . ' Uhr · ' . $persons . ($persons === 1 ? ' Person' : ' Personen') . ' · ' . $name,
+    '/reservierungen/verwaltung/?day=' . $date);

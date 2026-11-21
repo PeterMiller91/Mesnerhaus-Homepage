@@ -352,11 +352,15 @@ function rv_save_users(array $u): bool { return rv_write_json('resv-users', ['us
 function rv_session_start(): void {
     if (session_status() === PHP_SESSION_ACTIVE) return;
     session_name('mh_resv');
-    session_set_cookie_params(['lifetime' => 0, 'path' => '/reservierungen/verwaltung/', 'secure' => !empty($_SERVER['HTTPS']), 'httponly' => true, 'samesite' => 'Strict']);
+    $sessDir = tk_dir() . '/sessions';
+    if (!@is_dir($sessDir)) @mkdir($sessDir, 0700, true);
+    if (@is_dir($sessDir) && @is_writable($sessDir)) session_save_path($sessDir);
+    ini_set('session.gc_maxlifetime', (string)(30 * 86400));
+    session_set_cookie_params(['lifetime' => 30 * 86400, 'path' => '/reservierungen/verwaltung/', 'secure' => !empty($_SERVER['HTTPS']), 'httponly' => true, 'samesite' => 'Strict']);
     session_start();
     if (empty($_SESSION['csrf'])) $_SESSION['csrf'] = bin2hex(random_bytes(16));
     // nach 14 Tagen ohne Nutzung neu anmelden
-    if (!empty($_SESSION['last']) && time() - (int)$_SESSION['last'] > 14 * 86400) { $_SESSION = []; session_regenerate_id(true); $_SESSION['csrf'] = bin2hex(random_bytes(16)); }
+    if (!empty($_SESSION['last']) && time() - (int)$_SESSION['last'] > 30 * 86400) { $_SESSION = []; session_regenerate_id(true); $_SESSION['csrf'] = bin2hex(random_bytes(16)); }
     $_SESSION['last'] = time();
 }
 
@@ -436,6 +440,107 @@ function rv_table_conflicts(array $items, array $r, array $tableIds, int $durati
     $plan = $plan ?? rv_plan();
     foreach ($plan['tables'] as $t) if (isset($hit[$t['id']])) $out[] = 'Tisch ' . $t['name'] . ' (' . $hit[$t['id']] . ')';
     return $out;
+}
+
+/* ── Push-Benachrichtigungen (Web Push, ohne Fremddienst) ──────
+   Die Push-Nachricht ist leer. Der Service Worker holt den Text danach
+   über /reservierungen/verwaltung/push.php ab. Dafür reicht VAPID (ES256). */
+function rv_b64u(string $bin): string { return rtrim(strtr(base64_encode($bin), '+/', '-_'), '='); }
+
+function rv_push_keys(): ?array {
+    $k = rv_read_json('resv-push-keys', []);
+    if (!empty($k['private']) && !empty($k['public'])) return $k;
+    if (!function_exists('openssl_pkey_new')) return null;
+    $key = @openssl_pkey_new(['curve_name' => 'prime256v1', 'private_key_type' => OPENSSL_KEYTYPE_EC]);
+    if (!$key || !openssl_pkey_export($key, $pem)) return null;
+    $det = openssl_pkey_get_details($key);
+    $pub = "\x04" . str_pad($det['ec']['x'], 32, "\0", STR_PAD_LEFT) . str_pad($det['ec']['y'], 32, "\0", STR_PAD_LEFT);
+    $k = ['private' => $pem, 'public' => rv_b64u($pub)];
+    return rv_write_json('resv-push-keys', $k) ? $k : null;
+}
+
+/* DER-codierte ECDSA-Signatur → 64 Byte r||s (für JWT ES256) */
+function rv_der_to_raw(string $der): string {
+    $pos = 2; if (ord($der[1]) & 0x80) $pos += ord($der[1]) & 0x7f;
+    $out = '';
+    for ($i = 0; $i < 2; $i++) {
+        $pos++; $len = ord($der[$pos]); $pos++;
+        $int = substr($der, $pos, $len); $pos += $len;
+        $out .= str_pad(ltrim($int, "\0"), 32, "\0", STR_PAD_LEFT);
+    }
+    return $out;
+}
+
+function rv_vapid_header(string $endpoint, array $keys): ?string {
+    $p = parse_url($endpoint);
+    if (empty($p['scheme']) || empty($p['host'])) return null;
+    $aud = $p['scheme'] . '://' . $p['host'] . (isset($p['port']) ? ':' . $p['port'] : '');
+    $head = rv_b64u((string)json_encode(['typ' => 'JWT', 'alg' => 'ES256']));
+    $claims = rv_b64u((string)json_encode(['aud' => $aud, 'exp' => time() + 12 * 3600, 'sub' => 'mailto:' . rv_mail_from()]));
+    $priv = openssl_pkey_get_private($keys['private']);
+    if (!$priv || !openssl_sign("$head.$claims", $der, $priv, OPENSSL_ALGO_SHA256)) return null;
+    return 'vapid t=' . "$head.$claims." . rv_b64u(rv_der_to_raw($der)) . ', k=' . $keys['public'];
+}
+
+function rv_push_subs(): array { return rv_read_json('resv-push-subs', []); }
+function rv_push_save_subs(array $subs): bool { return rv_write_json('resv-push-subs', array_values($subs)); }
+
+/* Eine leere Push-Nachricht an ein Gerät. Rückgabe: HTTP-Status (0 = Netzfehler). */
+function rv_push_send_one(string $endpoint, array $keys): int {
+    $auth = rv_vapid_header($endpoint, $keys);
+    if (!$auth) return 0;
+    $headers = ['Authorization: ' . $auth, 'TTL: 86400', 'Urgency: high', 'Content-Length: 0'];
+    if (function_exists('curl_init')) {
+        $ch = curl_init($endpoint);
+        curl_setopt_array($ch, [CURLOPT_POST => true, CURLOPT_POSTFIELDS => '', CURLOPT_HTTPHEADER => $headers,
+            CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 8, CURLOPT_CONNECTTIMEOUT => 5]);
+        curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        return $code;
+    }
+    $ctx = stream_context_create(['http' => ['method' => 'POST', 'header' => implode("\r\n", $headers), 'content' => '', 'timeout' => 8, 'ignore_errors' => true]]);
+    @file_get_contents($endpoint, false, $ctx);
+    return isset($http_response_header[0]) && preg_match('/\s(\d{3})\s/', $http_response_header[0], $m) ? (int)$m[1] : 0;
+}
+
+/* Ereignis merken und an alle Geräte schicken, die es abonniert haben. $kind: neu | storno | test */
+function rv_push_notify(string $kind, string $title, string $body, string $url = '', string $onlyUser = ''): array {
+    $keys = rv_push_keys();
+    if (!$keys) return ['sent' => 0, 'failed' => 0];
+    $ev = rv_read_json('resv-push-events', ['next' => 1, 'items' => []]);
+    $id = (int)$ev['next']; $ev['next'] = $id + 1;
+    array_unshift($ev['items'], ['id' => $id, 'at' => time(), 'kind' => $kind, 'title' => $title, 'body' => $body, 'url' => $url ?: '/reservierungen/verwaltung/', 'user' => $onlyUser]);
+    $ev['items'] = array_slice($ev['items'], 0, 30);
+    rv_write_json('resv-push-events', $ev);
+
+    $subs = rv_push_subs(); $sent = 0; $failed = 0; $changed = false;
+    foreach ($subs as $i => $sub) {
+        if ($onlyUser !== '' && $sub['user'] !== $onlyUser) continue;
+        if ($kind !== 'test' && empty($sub['prefs'][$kind])) continue;
+        $code = rv_push_send_one($sub['endpoint'], $keys);
+        if ($code >= 200 && $code < 300) { $sent++; $subs[$i]['last_ok'] = time(); $changed = true; }
+        elseif ($code === 404 || $code === 410) { unset($subs[$i]); $changed = true; $failed++; }   // Gerät abgemeldet
+        else { $failed++; $subs[$i]['last_error'] = $code; $changed = true; }
+    }
+    if ($changed) rv_push_save_subs($subs);
+    return ['sent' => $sent, 'failed' => $failed];
+}
+
+/* Antwort an den Browser sofort abschließen, danach E-Mails/Push verschicken (schnellere Buchung). */
+function rv_finish_response(string $json, int $code = 200): void {
+    http_response_code($code);
+    header('Content-Length: ' . strlen($json));
+    header('Connection: close');
+    echo $json;
+    if (function_exists('fastcgi_finish_request')) fastcgi_finish_request();
+    else { @ob_end_flush(); @flush(); }
+    ignore_user_abort(true);
+    @set_time_limit(60);
+}
+
+function rv_short(array $r): string {
+    return date('d.m.', strtotime((string)$r['date'])) . ' ' . $r['time'] . ' · ' . (int)$r['persons'] . ' P. · ' . $r['name'];
 }
 
 /* Öffentliche Sicht auf eine Reservierung (ohne interne Felder). */

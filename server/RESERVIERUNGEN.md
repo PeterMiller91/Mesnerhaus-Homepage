@@ -64,6 +64,33 @@ Online zählt „davon online“, beim Eintragen in der App „Plätze gesamt“
 - Online-Buchung: Spamschutz (unsichtbares Feld, Mindestzeit), höchstens 5 Buchungen je Anschluss und Stunde.
 - Admin-Seiten: Login-Pflicht, CSRF-Schutz, strenge Content-Security-Policy, nicht in Suchmaschinen.
 
+## Push-Benachrichtigungen aufs Handy
+
+Bei jeder neuen Online-Reservierung (und auf Wunsch bei Gast-Stornos) bekommt das Handy eine Benachrichtigung,
+auch wenn die App geschlossen ist. Ohne fremde Dienste: Der Server schickt eine leere Push-Nachricht über den
+Push-Dienst des Handys (Apple/Google), das Handy holt den Text dann bei `/reservierungen/verwaltung/push.php` ab.
+
+**Einrichten (je Handy einmal):**
+
+*iPhone (ab iOS 16.4):*
+1. In **Safari** `mesnerhausarmesberg.de/reservierungen/verwaltung/` öffnen und anmelden.
+2. **Teilen** → **„Zum Home-Bildschirm“**.
+3. Die App **über das neue Symbol** öffnen (wichtig, nicht über Safari) und anmelden.
+4. Menü (☰) → **Benachrichtigungen** → **„Auf diesem Gerät aktivieren“** → Benachrichtigungen erlauben.
+   Es kommt sofort eine Test-Benachrichtigung.
+
+*Android (Chrome):*
+1. Verwaltung in Chrome öffnen, anmelden, Menü (⋮) → **„Zum Startbildschirm hinzufügen“** (optional, aber praktisch).
+2. Menü (☰) → **Benachrichtigungen** → **„Auf diesem Gerät aktivieren“** → erlauben.
+
+Im selben Dialog: Auswahl „neue Online-Reservierung“ / „Storno durch den Gast“, „Test senden“ und Liste der eigenen
+Geräte mit „Entfernen“. Abgemeldete Geräte entfernt der Server automatisch.
+
+Die Anmeldung bleibt auf jedem Gerät **30 Tage** bestehen (Sitzungen im Speicherordner unter `sessions/`).
+
+**Klappt nicht?** iPhone: wirklich über das Home-Bildschirm-Symbol geöffnet? Einstellungen → Mitteilungen →
+„Reservierungen“ erlaubt? Android: Chrome-Benachrichtigungen für die Seite erlaubt, Energiesparmodus aus?
+
 ## Tischplan
 
 In der Verwaltung oben **„Liste“ | „Tischplan“** umschalten. Die Wahl merkt sich jedes Gerät.

@@ -18,6 +18,16 @@ $s = rv_settings();
 
 /* ── Lesen ───────────────────────────────────────────────────── */
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    if (isset($_GET['push'])) {
+        $keys = rv_push_keys();
+        $mine = []; $others = 0;
+        foreach (rv_push_subs() as $sub) {
+            if ($sub['user'] === $me['id']) $mine[] = ['id' => substr(hash('sha256', $sub['endpoint']), 0, 16), 'label' => $sub['label'], 'prefs' => $sub['prefs'],
+                'created' => $sub['created'], 'last_ok' => $sub['last_ok'] ?? null, 'last_error' => $sub['last_error'] ?? null, 'endpoint_hash' => hash('sha256', $sub['endpoint'])];
+            else $others++;
+        }
+        out(200, ['ok' => true, 'available' => (bool)$keys, 'public_key' => $keys['public'] ?? '', 'devices' => $mine, 'others' => $others]);
+    }
     if (isset($_GET['templates'])) {
         if (!$isAdmin) out(403, ['ok' => false]);
         $sample = rv_sample_reservation();
@@ -134,6 +144,41 @@ if ($act === 'save') {
     $mailed = false;
     if ($res['new'] && !empty($in['send_mail']) && $res['item']['email'] !== '') $mailed = rv_mail_guest_confirm($res['item']);
     out(200, ['ok' => true, 'id' => $res['item']['id'], 'mailed' => $mailed]);
+}
+
+if ($act === 'push_subscribe') {
+    $ep = (string)($in['endpoint'] ?? '');
+    if (!preg_match('#^https://[a-z0-9.\-]+(:\d+)?/#i', $ep) || strlen($ep) > 1000) out(400, ['ok' => false, 'message' => 'Ungültiges Gerät.']);
+    $prefs = ['neu' => !empty($in['prefs']['neu']), 'storno' => !empty($in['prefs']['storno'])];
+    $label = rv_clean((string)($in['label'] ?? 'Gerät'), 40);
+    $ok = rv_with_lock(function () use ($ep, $prefs, $label, $me) {
+        $subs = array_values(array_filter(rv_push_subs(), function ($s) use ($ep) { return $s['endpoint'] !== $ep; }));
+        $subs[] = ['endpoint' => $ep, 'user' => $me['id'], 'label' => $label, 'prefs' => $prefs, 'created' => date('c'), 'last_event' => 0];
+        return rv_push_save_subs($subs);
+    });
+    out($ok ? 200 : 500, ['ok' => $ok]);
+}
+
+if ($act === 'push_prefs' || $act === 'push_remove') {
+    $hash = (string)($in['endpoint_hash'] ?? '');
+    $ok = rv_with_lock(function () use ($hash, $in, $act, $me) {
+        $subs = rv_push_subs(); $found = false;
+        foreach ($subs as $i => $s) {
+            if ($s['user'] !== $me['id'] || !hash_equals(hash('sha256', $s['endpoint']), $hash)) continue;
+            $found = true;
+            if ($act === 'push_remove') unset($subs[$i]);
+            else $subs[$i]['prefs'] = ['neu' => !empty($in['prefs']['neu']), 'storno' => !empty($in['prefs']['storno'])];
+        }
+        return $found && rv_push_save_subs($subs);
+    });
+    out($ok ? 200 : 404, ['ok' => $ok]);
+}
+
+if ($act === 'push_test') {
+    $r = rv_push_notify('test', 'Test vom Mesnerhaus', 'Push-Benachrichtigungen funktionieren auf diesem Gerät.', '/reservierungen/verwaltung/', $me['id']);
+    out(200, ['ok' => $r['sent'] > 0, 'message' => $r['sent'] > 0
+        ? 'Test an ' . $r['sent'] . ($r['sent'] === 1 ? ' Gerät' : ' Geräte') . ' geschickt. Kommt gleich an.'
+        : 'Kein Gerät erreicht' . ($r['failed'] ? ' (' . $r['failed'] . ' fehlgeschlagen)' : '') . '. Bitte auf diesem Gerät neu aktivieren.']);
 }
 
 if ($act === 'assign') {

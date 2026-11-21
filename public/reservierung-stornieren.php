@@ -37,6 +37,8 @@ if ($valid) {
         if ($r && !empty($r['_changed'])) {           // E-Mails erst nach Freigabe der Sperre
             rv_mail_owner($r, 'Storniert vom Gast');
             rv_mail_guest_cancel($r);
+            rv_push_notify('storno', 'Storniert vom Gast', rv_date_de($r['date']) . ', ' . $r['time'] . ' Uhr · ' . (int)$r['persons'] . ' P. · ' . $r['name'],
+                '/reservierungen/verwaltung/?day=' . $r['date']);
         }
         if ($r) $msg = 'Ihre Reservierung wurde storniert. Danke, dass Sie Bescheid gegeben haben!';
     } else {
