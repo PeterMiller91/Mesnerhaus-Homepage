@@ -68,7 +68,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $d = date('Y-m-d', strtotime("+$i days"));
         $cnt = 0; $g = 0;
         foreach ($all as $r) if ($r['date'] === $d && in_array($r['status'], RV_ACTIVE, true)) { $cnt++; $g += (int)$r['persons']; }
-        if ($cnt > 0 || rv_day($s, $d)) $next[] = ['date' => $d, 'label' => rv_date_de($d), 'count' => $cnt, 'guests' => $g, 'open' => (bool)rv_day($s, $d)];
+        if ($cnt > 0 || rv_day($s, $d)) {
+            $pk = 0;
+            if ($cnt > 0) for ($m = 600; $m < 1260; $m += 30) $pk = max($pk, rv_occupied($all, $d, $m, (int)$s['duration']));
+            $next[] = ['date' => $d, 'label' => rv_date_de($d), 'count' => $cnt, 'guests' => $g, 'open' => (bool)rv_day($s, $d),
+                       'pct' => min(100, (int)round($pk / max(1, (int)$s['seats']) * 100))];
+        }
     }
     $unseen = array_values(array_map(function ($r) { return ['id' => $r['id'], 'date' => $r['date'], 'time' => $r['time'], 'name' => $r['name'], 'persons' => (int)$r['persons'], 'status' => $r['status']]; },
         array_filter($all, function ($r) { return empty($r['seen']) && $r['date'] >= date('Y-m-d'); })));
@@ -78,7 +83,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         'slots' => $day ? rv_slots($s, $day) : [],
         'seats' => (int)$s['seats'], 'duration' => (int)$s['duration'], 'online_enabled' => (bool)$s['online_enabled'],
         'items' => $items, 'load' => $load,
-        'stats' => ['count' => count($active), 'guests' => array_sum(array_map(function ($r) { return (int)$r['persons']; }, $active)), 'peak' => $load ? max(array_column($load, 'guests')) : 0],
+        'stats' => (function () use ($active, $load, $all, $date) {
+            $guests = array_sum(array_map(function ($r) { return (int)$r['persons']; }, $active));
+            $peak = 0; $peakTime = '';
+            foreach ($load as $l) if ($l['guests'] > $peak) { $peak = $l['guests']; $peakTime = $l['time']; }
+            $prevDate = date('Y-m-d', strtotime($date . ' -7 days'));
+            $prev = 0;
+            foreach ($all as $r) if ($r['date'] === $prevDate && in_array($r['status'], RV_ACTIVE, true)) $prev += (int)$r['persons'];
+            return ['count' => count($active), 'guests' => $guests, 'peak' => $peak, 'peak_time' => $peakTime,
+                    'online' => count(array_filter($active, function ($r) { return ($r['source'] ?? '') === 'online'; })),
+                    'prev_guests' => $prev, 'prev_date' => $prevDate, 'prev_known' => $prevDate >= date('Y-m-d', strtotime('-' . RV_KEEP_DAYS . ' days'))];
+        })(),
         'next' => $next, 'unseen' => $unseen, 'plan' => rv_plan(),
     ]);
 }

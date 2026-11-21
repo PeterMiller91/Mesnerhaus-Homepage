@@ -32,8 +32,12 @@ Läuft komplett auf dem eigenen Webserver (PHP), ohne Datenbank-Server und ohne 
 - Ab 9 Personen: Hinweis auf Telefon/WhatsApp.
 
 **Verwaltung (`/reservierungen/verwaltung/`)**
-- Tagesansicht mit Kennzahlen, Ablauf nach Uhrzeit und Belegung je halbe Stunde.
-- Neue Online-Reservierungen erscheinen oben als Hinweis, bis man sie öffnet oder „Alle gesehen“ tippt.
+- Oben umschalten zwischen **Übersicht** und **Tischplan**, darunter die nächsten Öffnungstage mit Füllstand.
+- Übersicht: Auslastung zur Spitze (Ring), Gäste mit Vergleich zum gleichen Wochentag der Vorwoche,
+  Reservierungen (davon online), „Neu eingegangen“; Tagesablauf nach Uhrzeit mit Filtern (Alle, Erwartet, Da, Ohne Tisch),
+  „Tisch wählen“ springt in den Tischplan; rechts „Als Nächstes“ (Anrufen/WhatsApp), Belegungskurve und Wünsche des Tages.
+- Handy: kompakter Kopf mit Ring und Zahlen, Leiste unten (Ablauf, Tische, +, Neu, Mehr).
+- Neue Online-Reservierungen zählt die Karte „Neu eingegangen“ (Handy: Glocke), bis man sie öffnet oder „Alle gesehen“ tippt.
 - **Eintragen** für Telefon, WhatsApp, E-Mail oder Gäste vor Ort. Bei Überbuchung kommt eine Warnung, „Trotzdem eintragen“ ist möglich.
 - In jeder Reservierung: Anrufen, fertige WhatsApp-Bestätigung, Tisch, Notiz, Status (Bestätigt, Da, Storniert …).
 - „Da“-Knopf, wenn Gäste angekommen sind.
@@ -93,7 +97,7 @@ Die Anmeldung bleibt auf jedem Gerät **30 Tage** bestehen (Sitzungen im Speiche
 
 ## Tischplan
 
-In der Verwaltung oben **„Liste“ | „Tischplan“** umschalten. Die Wahl merkt sich jedes Gerät.
+In der Verwaltung oben **„Übersicht“ | „Tischplan“** umschalten (Handy: „Tische“ in der Leiste unten). Die Wahl merkt sich jedes Gerät.
 
 - **Uhrzeit wählen** (Leiste über dem Plan): Jeder Tisch zeigt, ob er zu dieser Zeit frei (weiß), reserviert (grün),
   mit Gästen besetzt (blau, nach „Da“) oder doppelt belegt (rot umrandet) ist.

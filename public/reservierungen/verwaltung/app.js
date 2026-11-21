@@ -4,7 +4,7 @@
   var root = document.getElementById('app');
   var boot = JSON.parse(root.getAttribute('data-boot'));
   var isAdmin = boot.user.role === 'admin';
-  var S = { date: boot.day || boot.today, data: null, menu: false, view: 'liste', planTime: null, area: null, assign: null, edit: null, sel: null };
+  var S = { date: boot.day || boot.today, data: null, menu: false, view: 'liste', planTime: null, area: null, assign: null, edit: null, sel: null, filter: 'alle' };
   try { if (localStorage.getItem('mh-view') === 'plan') S.view = 'plan'; } catch { /* egal */ }
 
   /* ── Helfer ─────────────────────────────────────────────── */
@@ -21,7 +21,9 @@
     menu: '<path d="M4 7h16M4 12h16M4 17h16"/>', cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',
     check: '<path d="M20 6L9 17l-5-5"/>', edit: '<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
     phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',
-    msg: '<path d="M21 12a8.5 8.5 0 0 1-12.4 7.6L3 21l1.4-5.4A8.5 8.5 0 1 1 21 12z"/>', close: '<path d="M6 6l12 12M18 6L6 18"/>'
+    msg: '<path d="M21 12a8.5 8.5 0 0 1-12.4 7.6L3 21l1.4-5.4A8.5 8.5 0 1 1 21 12z"/>', close: '<path d="M6 6l12 12M18 6L6 18"/>',
+    list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>', grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>'
   };
   function ico(n) { return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + ICON[n] + '</svg>'; }
   var STATUS = { bestaetigt: 'Bestätigt', erschienen: 'Da', storniert: 'Storniert', abgelehnt: 'Abgelehnt', nicht_erschienen: 'Nicht erschienen' };
@@ -56,83 +58,217 @@
   }
 
   /* ── Darstellung ────────────────────────────────────────── */
+  var MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+  function longDate(d) { var x = new Date(d + 'T12:00:00'); return WD[x.getDay()] + ', ' + x.getDate() + '. ' + MONTHS[x.getMonth()]; }
+  function hourOnly(t) { return String(t || '').replace(/:00$/, '').replace(/^0/, ''); }
+  function initial(n) { var m = String(n || '').trim().replace(/^(familie|fam\.)\s+/i, ''); return (m.charAt(0) || '?').toUpperCase(); }
+  function tableText(r) { return r.table ? (/^tisch/i.test(r.table) ? r.table : 'Tisch ' + r.table) : ''; }
+  function hasTable(r) { return (r.tables || []).length > 0 || !!r.table; }
+  function nowMin() { var n = new Date(); return n.getHours() * 60 + n.getMinutes(); }
+  function filterOf(r, f) {
+    if (f === 'erwartet') return r.status === 'bestaetigt';
+    if (f === 'da') return r.status === 'erschienen';
+    if (f === 'ohne') return isActive(r) && !hasTable(r);
+    return true;
+  }
+
+  function headerHtml(d) {
+    var isToday = d.date === boot.today;
+    var eyebrow = (isToday ? 'Heute' : (d.date === addDays(boot.today, 1) ? 'Morgen' : WD[new Date(d.date + 'T12:00:00').getDay()])) + ' · ' +
+      (d.open ? 'geöffnet ' + hourOnly(d.open.open) + '–' + hourOnly(d.open.close) + ' Uhr' : 'regulär geschlossen');
+    var pct = d.seats ? Math.min(100, Math.round(d.stats.peak / d.seats * 100)) : 0;
+    var h = '<header class="top"><div class="top-inner">';
+    h += '<div class="top-row"><div class="brand"><span class="logo" aria-hidden="true"></span><span class="brand-name">Mesnerhaus</span></div>' +
+      '<nav class="seg-nav" aria-label="Ansicht">' +
+        '<button data-view="liste" aria-pressed="' + (S.view !== 'plan') + '">Übersicht</button>' +
+        '<button data-view="plan" aria-pressed="' + (S.view === 'plan') + '">Tischplan</button></nav>' +
+      '<span class="grow"></span>' +
+      '<button class="btn new-btn" data-act="new">' + ico('plus') + 'Reservierung</button>' +
+      '<button class="avatar" data-act="menu" aria-label="Menü" aria-expanded="' + S.menu + '">' + esc(initial(boot.user.name)) + '</button></div>';
+    h += '<div class="hero"><div class="hero-text"><div class="eyebrow">' + esc(eyebrow) + '</div>' +
+      '<div class="hero-date"><button class="hd-arrow" data-act="prev" aria-label="Vorheriger Tag">' + ico('left') + '</button>' +
+      '<h1>' + esc(longDate(d.date)) + '</h1>' +
+      '<button class="hd-arrow" data-act="next" aria-label="Nächster Tag">' + ico('right') + '</button></div>' +
+      (d.online_enabled ? '' : '<span class="paused">Online-Buchung pausiert</span>') + '</div>' +
+      '<div class="ring m-only" style="--p:' + pct + ';--c:' + (pct >= 85 ? '#E39A55' : '#A8CC5A') + '"><div><b>' + pct + '%</b><span>Spitze</span></div></div>' +
+      '<div class="tabs-strip" role="group" aria-label="Nächste Öffnungstage">' + d.next.map(function (n) {
+        var x = new Date(n.date + 'T12:00:00');
+        return '<button class="daytab' + (n.date === d.date ? ' on' : '') + '" data-day="' + esc(n.date) + '" aria-pressed="' + (n.date === d.date) + '"' +
+          ' title="' + esc(n.count ? n.count + ' Reservierungen, ' + n.guests + ' Gäste' : (n.open ? 'noch frei' : 'geschlossen')) + '">' +
+          '<small>' + WD[x.getDay()].slice(0, 2) + '</small><b>' + x.getDate() + '.' + (x.getMonth() + 1) + '.</b>' +
+          '<i class="fillbar"><i style="width:' + (n.pct || 0) + '%"' + ((n.pct || 0) >= 85 ? ' class="hi"' : '') + '></i></i></button>';
+      }).join('') +
+      '<label class="daytab cal" title="Datum wählen"><span class="sr">Datum wählen</span>' + ico('cal') + '<input type="date" id="pick" value="' + esc(d.date) + '"></label></div>';
+    h += '<div class="m-stats m-only">' +
+      '<div><small>Gäste</small><b>' + d.stats.guests + '</b></div>' +
+      '<div><small>Reserv.</small><b>' + d.stats.count + '</b></div>' +
+      '<button class="' + (d.unseen.length ? 'neu' : '') + '" data-act="unseen"><small>Neu</small><b>' + d.unseen.length + '</b></button></div>';
+    h += '</div></div></header>';
+    return h;
+  }
+
+  function menuHtml() {
+    if (!S.menu) return '';
+    return '<div class="menu-list" role="menu"><div class="who">Angemeldet als <b>' + esc(boot.user.name) + '</b></div>' +
+      (isAdmin ? '<button role="menuitem" data-act="settings">Einstellungen</button><button role="menuitem" data-act="templates">E-Mail-Vorlagen</button>' : '') +
+      '<button role="menuitem" data-act="push">Benachrichtigungen</button>' +
+      '<button role="menuitem" data-act="print">Tagesliste drucken</button>' +
+      '<button role="menuitem" data-act="password">Passwort ändern</button>' +
+      '<button role="menuitem" data-act="logout">Abmelden</button></div>';
+  }
+
+  function kpiHtml(d) {
+    var pct = d.seats ? Math.min(100, Math.round(d.stats.peak / d.seats * 100)) : 0;
+    var diff = d.stats.guests - (d.stats.prev_guests || 0);
+    var wd = WD[new Date(d.date + 'T12:00:00').getDay()];
+    var cmp = d.stats.prev_known ? '<small class="' + (diff > 0 ? 'up' : diff < 0 ? 'down' : '') + '">' + (diff > 0 ? '+' + diff : diff < 0 ? '−' + (-diff) : '±0') + ' gegenüber letztem ' + wd + '</small>' : '';
+    return '<section class="kpis" aria-label="Kennzahlen">' +
+      '<div class="kpi ringkpi"><div class="ring" style="--p:' + pct + ';--c:' + (pct >= 85 ? '#C46A1E' : '#8DB43A') + '"><div><b>' + pct + '%</b></div></div>' +
+        '<div><small>Auslastung zur Spitze</small><p>' + (d.stats.peak ? '<b>' + d.stats.peak + ' von ' + d.seats + '</b> Plätzen um ' + esc(d.stats.peak_time) : 'Noch keine Gäste eingetragen') + '</p></div></div>' +
+      '<div class="kpi"><small>Gäste</small><b>' + d.stats.guests + '</b>' + cmp + '</div>' +
+      '<div class="kpi"><small>Reservierungen</small><b>' + d.stats.count + '</b><small class="plain">davon ' + d.stats.online + ' online</small></div>' +
+      '<button class="kpi neu' + (d.unseen.length ? '' : ' none') + '" data-act="unseen"><small>Neu eingegangen</small><b>' + d.unseen.length + '</b><small>' + (d.unseen.length ? 'ansehen →' : 'alles gesehen') + '</small></button>' +
+      '</section>';
+  }
+
+  function cardHtml(r) {
+    var inactive = !isActive(r), here = r.status === 'erschienen', neu = !r.seen && !inactive, noTbl = isActive(r) && !hasTable(r);
+    var meta = [r.persons + (r.persons === 1 ? ' Person' : ' Personen')];
+    meta.push(noTbl ? '<em>noch kein Tisch</em>' : esc(tableText(r)));
+    if (r.note) meta.push(esc(r.note));
+    meta.push(esc(SOURCE[r.source] || r.source));
+    var cls = 'card' + (here ? ' here' : '') + (neu ? ' neu' : '') + (noTbl && !here ? ' notbl' : '') + (inactive ? ' inactive' : '');
+    var acts = '';
+    if (r.status === 'bestaetigt') {
+      if (noTbl) acts += '<button class="pill-btn warn" data-pickt="' + r.id + '">Tisch wählen</button>';
+      acts += '<button class="pill-btn" data-here="' + r.id + '" aria-label="' + esc(r.name) + ' ist da">' + ico('check') + '<span>Da</span></button>';
+    } else if (!here) acts = '<span class="chip ' + esc(r.status) + '">' + esc(STATUS[r.status] || r.status) + '</span>';
+    return '<div class="' + cls + '">' +
+      '<span class="av" aria-hidden="true">' + esc(initial(r.name)) + '</span>' +
+      '<button class="info" data-open="' + r.id + '"><b>' + esc(r.name) + (neu ? ' <span class="badge-neu">NEU</span>' : '') + (here ? ' <span class="badge-here">ist da</span>' : '') + '</b>' +
+        '<span>' + meta.filter(Boolean).join(' · ') + '</span></button>' +
+      '<span class="pers">' + r.persons + ' P.</span>' +
+      (acts ? '<div class="acts">' + acts + '</div>' : '') + '</div>';
+  }
+
+  function timelineHtml(d) {
+    var f = S.filter || 'alle';
+    var counts = { alle: d.items.length, erwartet: 0, da: 0, ohne: 0 };
+    d.items.forEach(function (r) { ['erwartet', 'da', 'ohne'].forEach(function (k) { if (filterOf(r, k)) counts[k]++; }); });
+    var labels = { alle: 'Alle', erwartet: 'Erwartet', da: 'Da', ohne: 'Ohne Tisch' };
+    var h = '<section class="panel timeline"><div class="tl-head"><h2>Tagesablauf</h2><div class="filters" role="group" aria-label="Filter">' +
+      Object.keys(labels).map(function (k) {
+        if (k !== 'alle' && !counts[k] && f !== k) return '';
+        return '<button data-filter="' + k + '" aria-pressed="' + (f === k) + '">' + labels[k] + ' <span>' + counts[k] + '</span></button>';
+      }).join('') + '</div></div>' +
+      '<p class="print-title">Reservierungen ' + esc(d.label) + ' · ' + d.stats.guests + ' Gäste</p>';
+    if (!d.open) h += '<p class="closed-note">An diesem Tag ist regulär geschlossen. Feiern und Gruppen kannst du trotzdem eintragen.</p>';
+    var list = d.items.filter(function (r) { return filterOf(r, f); });
+    if (!d.items.length) return h + '<p class="empty">Noch keine Reservierungen für diesen Tag.</p></section>';
+    if (!list.length) return h + '<p class="empty">Keine Einträge in diesem Filter.</p></section>';
+    var groups = [], by = {};
+    list.forEach(function (r) { if (!by[r.time]) { by[r.time] = []; groups.push(r.time); } by[r.time].push(r); });
+    var isToday = d.date === boot.today, m = nowMin();
+    h += '<div class="tl">' + groups.map(function (t) {
+      var past = isToday && minutes(t) + d.duration <= m;
+      var nowish = isToday && !past && minutes(t) <= m + 60;
+      return '<div class="tl-time' + (past ? ' past' : '') + '">' + esc(t) + '</div><div class="tl-group' + (past ? ' past' : '') + (nowish ? ' soon' : '') + '">' +
+        by[t].map(cardHtml).join('') + '</div>';
+    }).join('') + '</div></section>';
+    return h;
+  }
+
+  function nextHtml(d) {
+    var isToday = d.date === boot.today, m = nowMin();
+    var cand = d.items.filter(function (r) { return r.status === 'bestaetigt' && (!isToday || minutes(r.time) >= m - 30); })[0];
+    if (!cand) return '<section class="next-card"><div class="eyebrow">Als Nächstes</div><p class="nc-empty">' + (d.items.some(isActive) ? 'Alle erwarteten Gäste sind da.' : 'Keine Reservierungen.') + '</p></section>';
+    var label = 'Erste Reservierung';
+    if (isToday) { var diff = minutes(cand.time) - m; label = diff > 0 ? 'Als Nächstes · in ' + (diff >= 90 ? Math.floor(diff / 60) + ' Std. ' + (diff % 60 ? diff % 60 + ' Min.' : '') : diff + ' Min.') : (diff === 0 ? 'Als Nächstes · jetzt' : 'Erwartet seit ' + (-diff) + ' Min.'); }
+    var msg = 'Grüß Gott ' + cand.name + ', wir freuen uns auf Sie heute um ' + cand.time + ' Uhr. Ihr Mesnerhaus';
+    return '<section class="next-card"><div class="eyebrow">' + esc(label) + '</div>' +
+      '<button class="nc-name" data-open="' + cand.id + '">' + esc(cand.name) + '</button>' +
+      '<div class="nc-meta">' + esc(cand.time) + ' · ' + cand.persons + ' Personen' + (hasTable(cand) ? ' · ' + esc(tableText(cand)) : ' · noch kein Tisch') + '</div>' +
+      (cand.note ? '<div class="nc-note">' + esc(cand.note) + '</div>' : '') +
+      (cand.phone ? '<div class="nc-acts"><a class="nc-btn primary" href="tel:' + esc(cand.phone.replace(/[^\d+]/g, '')) + '">' + ico('phone') + 'Anrufen</a>' +
+        '<a class="nc-btn" target="_blank" rel="noopener" href="https://wa.me/' + esc(phoneIntl(cand.phone)) + '?text=' + encodeURIComponent(msg) + '">' + ico('msg') + 'WhatsApp</a></div>' : '') +
+      '</section>';
+  }
+
+  function curveHtml(d) {
+    if (!d.load.length) return '';
+    var W = 340, H = 150, top = 22, base = 128, n = d.load.length;
+    var max = Math.max(d.seats, d.stats.peak, 1);
+    var x = function (i) { return n === 1 ? W / 2 : Math.round(i / (n - 1) * W * 10) / 10; };
+    var y = function (g) { return Math.round((base - g / max * (base - top)) * 10) / 10; };
+    var pts = d.load.map(function (l, i) { return x(i) + ' ' + y(l.guests); });
+    var pk = 0; d.load.forEach(function (l, i) { if (l.guests > d.load[pk].guests) pk = i; });
+    var seatY = y(d.seats);
+    var labels = '';
+    d.load.forEach(function (l, i) {
+      if (l.time.slice(3) !== '00' || (minutes(l.time) - minutes(d.load[0].time)) % 120) return;
+      labels += '<text x="' + x(i) + '" y="146" text-anchor="' + (i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle') + '">' + hourOnly(l.time) + (i === 0 ? ' Uhr' : '') + '</text>';
+    });
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc('Belegung über den Tag, höchstens ' + d.stats.peak + ' von ' + d.seats + ' Plätzen' + (d.stats.peak_time ? ' um ' + d.stats.peak_time : '')) + '">' +
+      '<line x1="0" y1="' + seatY + '" x2="' + W + '" y2="' + seatY + '" class="cap"/>' +
+      '<text x="' + W + '" y="' + (seatY - 6) + '" text-anchor="end" class="cap-t">' + d.seats + ' Plätze</text>' +
+      '<line x1="0" y1="' + base + '" x2="' + W + '" y2="' + base + '" class="axis"/>' +
+      '<path d="M' + pts.join(' L') + ' L' + x(n - 1) + ' ' + base + ' L0 ' + base + ' Z" class="area"/>' +
+      '<path d="M' + pts.join(' L') + '" class="line"/>' +
+      (d.stats.peak ? '<circle cx="' + x(pk) + '" cy="' + y(d.load[pk].guests) + '" r="5" class="pk"/><text x="' + Math.min(W - 10, Math.max(10, x(pk))) + '" y="' + (y(d.load[pk].guests) - 9) + '" text-anchor="middle" class="pk-t">' + d.load[pk].guests + '</text>' : '') +
+      labels + '</svg>';
+    return '<section class="panel side"><div class="side-head"><h2>Belegung</h2><span>Gäste am Tisch, je Reservierung ' + d.duration + ' Min.</span></div>' + svg + '</section>';
+  }
+
+  function wishesHtml(d) {
+    var w = d.items.filter(function (r) { return isActive(r) && r.note; });
+    return '<section class="panel side"><h2>Wünsche' + (d.date === boot.today ? ' heute' : '') + '</h2>' +
+      (w.length ? '<div class="wishes">' + w.map(function (r) {
+        return '<button class="wish" data-open="' + r.id + '"><span class="wi">' + ico('msg') + '</span><span><b>' + esc(r.note) + '</b> · ' + esc(r.name) + ', ' + esc(r.time) + '</span></button>';
+      }).join('') + '</div>' : '<p class="hint">Keine besonderen Wünsche eingetragen.</p>') + '</section>';
+  }
+
   function render() {
     var d = S.data;
-    var html = '';
-    html += '<header class="top"><div class="top-inner">' +
-      '<div class="brand"><span class="logo" aria-hidden="true"></span><div><h1>Reservierungen</h1><p class="muted">Mesnerhaus am Armesberg</p></div></div>' +
-      '<div class="datenav">' +
-        '<button class="icon-btn" data-act="prev" aria-label="Vorheriger Tag">' + ico('left') + '</button>' +
-        '<label class="day" title="Datum wählen">' + esc(d.label) + '<input type="date" id="pick" value="' + esc(d.date) + '"></label>' +
-        '<button class="icon-btn" data-act="pickdate" aria-label="Datum wählen">' + ico('cal') + '</button>' +
-        '<button class="icon-btn" data-act="next" aria-label="Nächster Tag">' + ico('right') + '</button>' +
-      '</div>' +
-      '<div class="top-actions">' +
-        '<button class="btn ghost hide-sm" data-act="print">' + ico('print') + 'Drucken</button>' +
-        '<button class="btn primary hide-sm" data-act="new">' + ico('plus') + 'Eintragen</button>' +
-        '<div class="menu"><button class="icon-btn" data-act="menu" aria-label="Menü" aria-expanded="' + S.menu + '">' + ico('menu') + '</button>' +
-          (S.menu ? '<div class="menu-list" role="menu"><div class="who">Angemeldet als <b>' + esc(boot.user.name) + '</b></div>' +
-            (isAdmin ? '<button role="menuitem" data-act="settings">Einstellungen</button><button role="menuitem" data-act="templates">E-Mail-Vorlagen</button>' : '') +
-            '<button role="menuitem" data-act="push">Benachrichtigungen</button>' +
-            '<button role="menuitem" data-act="print">Tagesliste drucken</button>' +
-            '<button role="menuitem" data-act="password">Passwort ändern</button>' +
-            '<button role="menuitem" data-act="logout">Abmelden</button></div>' : '') +
-        '</div>' +
-      '</div></div></header>';
-
-    html += '<main class="app">';
-    html += '<nav class="daychips" aria-label="Nächste Tage">' + d.next.map(function (n) {
-      return '<button class="daychip' + (n.date === d.date ? ' on' : '') + '" data-day="' + esc(n.date) + '"><b>' + esc(shortDate(n.date)) + '</b><span>' +
-        (n.count ? n.count + ' Res. · ' + n.guests + ' Gäste' : (n.open ? 'noch frei' : 'geschlossen')) + '</span></button>';
-    }).join('') + '</nav>';
-
-    if (d.unseen.length) {
-      html += '<div class="banner" role="status"><b>' + d.unseen.length + (d.unseen.length === 1 ? ' neue Online-Reservierung' : ' neue Online-Reservierungen') + '</b>' +
-        '<div class="chips">' + d.unseen.map(function (u) {
-          return '<button data-open="' + u.id + '" data-day="' + esc(u.date) + '">' + esc(shortDate(u.date)) + ' ' + esc(u.time) + ' · ' + esc(u.name) + ' (' + u.persons + ')' + (u.status === 'storniert' ? ' · storniert' : '') + '</button>';
-        }).join('') + '</div><button class="btn small ghost" data-act="seenall">Alle gesehen</button></div>';
+    var html = headerHtml(d) + menuHtml();
+    html += '<main class="app' + (S.view === 'plan' ? ' planview' : '') + '">';
+    if (S.view === 'plan') {
+      html += planHtml(d);
+    } else {
+      html += '<div class="dash"><div class="dash-main">' + kpiHtml(d) + timelineHtml(d) + '</div>' +
+        '<aside class="dash-side">' + nextHtml(d) + curveHtml(d) + wishesHtml(d) + '</aside></div>';
     }
-
-    html += '<section class="kpis" aria-label="Kennzahlen">' +
-      '<div class="kpi"><small>Reservierungen</small><b>' + d.stats.count + '</b></div>' +
-      '<div class="kpi"><small>Gäste</small><b>' + d.stats.guests + '</b></div>' +
-      '<div class="kpi"><small>Höchste Belegung</small><b>' + d.stats.peak + '</b> <span class="sub">von ' + d.seats + '</span></div>' +
-      '<div class="kpi"><small>Online-Buchung</small><div class="toggle"><span class="dot' + (d.online_enabled ? '' : ' off') + '"></span>' + (d.online_enabled ? 'aktiv' : 'pausiert') + '</div></div>' +
-      '</section>';
-
-    html += '<div class="viewswitch" role="tablist" aria-label="Ansicht">' +
-      '<button role="tab" data-view="liste" aria-selected="' + (S.view !== 'plan') + '">Liste</button>' +
-      '<button role="tab" data-view="plan" aria-selected="' + (S.view === 'plan') + '">Tischplan</button></div>';
-    if (S.view === 'plan') { html += planHtml(d); } else {
-    html += '<div class="cols"><section class="panel"><h2>Ablauf <span class="count">' + d.items.length + ' Einträge</span></h2>' +
-      '<p class="print-title">Reservierungen ' + esc(d.label) + ' · ' + d.stats.guests + ' Gäste</p>';
-    if (!d.open) html += '<p class="closed-note">An diesem Tag ist regulär geschlossen. Feiern und Gruppen kannst du trotzdem eintragen.</p>';
-    if (!d.items.length) html += '<p class="empty">Noch keine Reservierungen für diesen Tag.</p>';
-    html += d.items.map(function (r) {
-      var inactive = !(r.status === 'bestaetigt' || r.status === 'erschienen');
-      var meta = [SOURCE[r.source] || r.source];
-      if (r.table) meta.push(/^tisch/i.test(r.table) ? r.table : 'Tisch ' + r.table);
-      if (r.note) meta.push(r.note);
-      if (r.phone) meta.push(r.phone);
-      return '<div class="row' + (inactive ? ' inactive' : '') + '">' +
-        '<div class="t">' + esc(r.time) + '</div>' +
-        '<button class="who" data-open="' + r.id + '"><b>' + esc(r.name) + (r.seen ? '' : ' <span class="chip neu">Neu</span>') + '</b><span>' + esc(meta.join(' · ')) + '</span></button>' +
-        '<div class="p">' + r.persons + ' P.</div>' +
-        '<div class="acts"><span class="chip ' + esc(r.status) + '">' + esc(STATUS[r.status] || r.status) + '</span>' +
-          (r.status === 'bestaetigt' ? '<button class="btn small ghost" data-here="' + r.id + '" aria-label="' + esc(r.name) + ' ist da">' + ico('check') + '<span class="hide-xs">Da</span></button>' : '') +
-        '</div></div>';
-    }).join('');
-    html += '</section><aside class="panel"><h2>Belegung</h2>' +
-      (d.load.length ? '<div class="bars">' + d.load.map(function (l) {
-        return '<div class="bar"><span>' + esc(l.time) + '</span><div class="track"><div class="fill' + (l.pct >= 85 ? ' hi' : '') + '" style="width:' + l.pct + '%"></div></div><span>' + l.guests + '/' + d.seats + '</span></div>';
-      }).join('') + '</div><p class="hint" style="margin-top:10px">Gäste am Tisch, eine Reservierung belegt ' + d.duration + ' Minuten.</p>' : '<p class="empty">–</p>') +
-      '</aside></div>';
-    }
-    html += '</main><button class="btn primary fab" data-act="new" aria-label="Reservierung eintragen">' + ico('plus') + 'Eintragen</button>';
+    html += '</main>';
+    html += '<nav class="bottom-nav" aria-label="Hauptmenü">' +
+      '<button data-view="liste" aria-pressed="' + (S.view !== 'plan') + '">' + ico('list') + 'Ablauf</button>' +
+      '<button data-view="plan" aria-pressed="' + (S.view === 'plan') + '">' + ico('grid') + 'Tische</button>' +
+      '<button class="bn-new" data-act="new" aria-label="Reservierung eintragen">' + ico('plus') + '</button>' +
+      '<button data-act="unseen">' + ico('bell') + 'Neu' + (d.unseen.length ? '<i class="bn-badge">' + d.unseen.length + '</i>' : '') + '</button>' +
+      '<button data-act="menu" aria-expanded="' + S.menu + '">' + ico('menu') + 'Mehr</button></nav>';
     root.innerHTML = html;
 
     $('#pick').addEventListener('change', function (e) { if (e.target.value) load(e.target.value); });
     if (S.view === 'plan') bindPlan();
+  }
+
+  function openUnseen() {
+    var u = S.data.unseen;
+    var body = u.length ? '<div class="unseen-list">' + u.map(function (x) {
+      return '<button type="button" class="card' + (x.status === 'storniert' ? ' inactive' : ' neu') + '" data-uopen="' + x.id + '" data-udate="' + esc(x.date) + '">' +
+        '<span class="av" aria-hidden="true">' + esc(initial(x.name)) + '</span><span class="info"><b>' + esc(x.name) + '</b><span>' + esc(shortDate(x.date)) + ' · ' + esc(x.time) + ' Uhr' + (x.status === 'storniert' ? ' · storniert' : '') + '</span></span>' +
+        '<span class="pers">' + x.persons + ' P.</span></button>';
+    }).join('') + '</div>' : '<p class="hint">Keine neuen Online-Reservierungen. Alles gesehen.</p>';
+    var dlg = dialog('Neu eingegangen', body, (u.length ? '<button type="button" class="btn ghost" data-seenall>Alle gesehen</button>' : '') + '<span style="flex:1"></span><button type="button" class="btn primary" data-close2>Schließen</button>');
+    $('[data-close2]', dlg).addEventListener('click', function () { dlg.close(); });
+    if ($('[data-seenall]', dlg)) $('[data-seenall]', dlg).addEventListener('click', function () {
+      api('POST', { action: 'seen', ids: u.map(function (x) { return x.id; }) }).then(function () { dlg.close(); load(); });
+    });
+    $$('[data-uopen]', dlg).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var id = +b.dataset.uopen, day = b.dataset.udate;
+        dlg.close();
+        (day !== S.date ? load(day) : Promise.resolve()).then(function () { openEdit(id); });
+      });
+    });
   }
 
   /* ── Bearbeiten / Eintragen ─────────────────────────────── */
@@ -778,7 +914,17 @@
       go.then(function () { openEdit(oid); });
       return;
     }
+    if (t.dataset.view && S.menu) S.menu = false;
     if (planClick(t, act)) return;
+    if (t.dataset.filter) { S.filter = t.dataset.filter; render(); return; }
+    if (t.dataset.pickt) {
+      var pr = S.data.items.filter(function (x) { return x.id === +t.dataset.pickt; })[0];
+      if (!pr) return;
+      var pts = planTimes(S.data), best = pts[0];
+      pts.forEach(function (x) { if (minutes(x) <= minutes(pr.time)) best = x; });
+      S.view = 'plan'; S.assign = pr.id; S.planTime = best || null;
+      render(); window.scrollTo(0, 0); return;
+    }
     if (t.dataset.here) { api('POST', { action: 'status', id: parseInt(t.dataset.here, 10), status: 'erschienen' }).then(function () { load(); }); return; }
     if (t.dataset.day && !act) { load(t.dataset.day); return; }
     if (act !== 'menu' && S.menu) S.menu = false;
@@ -793,7 +939,7 @@
     else if (act === 'password') { render(); openPassword(); }
     else if (act === 'push') { render(); openPush(); }
     else if (act === 'logout') document.getElementById('logout').submit();
-    else if (act === 'seenall') api('POST', { action: 'seen', ids: S.data.unseen.map(function (u) { return u.id; }) }).then(function () { load(); });
+    else if (act === 'unseen') { render(); openUnseen(); }
   });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && S.menu) { S.menu = false; render(); } });
 

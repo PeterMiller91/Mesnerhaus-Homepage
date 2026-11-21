@@ -68,11 +68,11 @@ $me = $users ? rv_current_user() : null;
 function shell(string $title, string $body, bool $app = false): void {
     echo '<!doctype html><html lang="de"><head><meta charset="utf-8">'
        . '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
-       . '<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#3D5C15">'
+       . '<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#2F4A12">'
        . '<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="/icon.svg" type="image/svg+xml">'
        . '<link rel="apple-touch-icon" href="/apple-icon.png"><meta name="apple-mobile-web-app-title" content="Reservierungen">'
-       . '<title>' . h($title) . '</title><link rel="stylesheet" href="app.css?v=2"></head><body>' . $body
-       . ($app ? '<script src="app.js?v=2"></script>' : '') . '</body></html>';
+       . '<title>' . h($title) . '</title><link rel="stylesheet" href="app.css?v=3"></head><body>' . $body
+       . ($app ? '<script src="app.js?v=3"></script>' : '') . '</body></html>';
 }
 
 if (!$me) {
