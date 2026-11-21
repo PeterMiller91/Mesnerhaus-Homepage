@@ -1,0 +1,13 @@
+{
+  "name": "Mesnerhaus Reservierungen",
+  "short_name": "Reservierungen",
+  "start_url": "/reservierungen/",
+  "scope": "/reservierungen/",
+  "display": "standalone",
+  "background_color": "#FAFAF5",
+  "theme_color": "#3D5C15",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

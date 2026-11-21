@@ -8,7 +8,7 @@ import Icon, { Stars, type IconName } from "@/components/Icon";
 import OpenStatus from "@/components/OpenStatus";
 import HoursTable from "@/components/HoursTable";
 import WeatherWidget from "@/components/WeatherWidget";
-import ReservationForm from "@/components/ReservationForm";
+import OnlineBooking from "@/components/OnlineBooking";
 import ReviewCarousel from "@/components/ReviewCarousel";
 import Tageskarte from "@/components/Tageskarte";
 import ConsentMap from "@/components/ConsentMap";
@@ -670,13 +670,13 @@ export default function Home() {
               <SectionLabel>Reservierung</SectionLabel>
               <h2 className="text-2xl md:text-4xl text-[var(--color-dark)] mb-3"
                 style={{ fontFamily: "var(--font-playfair)" }}>
-                Tisch anfragen
+                Tisch reservieren
               </h2>
               <p className="text-sm text-[var(--color-mid)] mb-6 leading-relaxed">
-                Am schnellsten per Telefon. Außerhalb unserer Öffnungszeiten einfach hier ausfüllen und per WhatsApp oder E-Mail schicken.
+                Wählen Sie Tag und Uhrzeit. Ist Platz frei, ist Ihr Tisch sofort reserviert. Bis 8 Personen online, größere Gruppen bitte per Telefon oder WhatsApp.
               </p>
               <div className="p-5 md:p-6 rounded-2xl bg-[var(--color-brand-pale)] border border-[var(--color-brand-light)]">
-                <ReservationForm />
+                <OnlineBooking />
               </div>
               <p className="mt-5 text-sm text-[var(--color-mid)] leading-relaxed">
                 <strong className="text-[var(--color-brand-dark)]">Gruppen & Feiern:</strong>{" "}

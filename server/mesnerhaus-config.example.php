@@ -7,6 +7,9 @@ return [
     // Upload-Link: https://mesnerhausarmesberg.de/tageskarte-upload.php?k=<upload_key>
     'upload_key'                => 'hier-mindestens-24-zufaellige-zeichen',
 
+    // Absender für Reservierungs-E-Mails (optional)
+    // 'mail_from'              => 'kontakt@mesnerhausarmesberg.de',
+
     'site_url'                  => 'https://mesnerhausarmesberg.de',
 
     // Wo die Tageskarte gespeichert wird (außerhalb von out/)

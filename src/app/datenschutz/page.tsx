@@ -20,6 +20,7 @@ const toc = [
   ["wetter", "Wetterdaten"],
   ["schriften", "Schriftarten"],
   ["kontakt", "Kontakt und Tischanfrage"],
+  ["reservierung", "Online-Reservierung"],
   ["whatsapp", "WhatsApp"],
   ["links", "Links zu anderen Anbietern"],
   ["bewertungen", "Gästebewertungen"],
@@ -60,7 +61,7 @@ export default function Datenschutz() {
       </p>
       <ul>
         <li>Wir setzen <strong>keine</strong> Analyse-, Tracking- oder Werbedienste ein und erstellen keine Nutzerprofile.</li>
-        <li>Es gibt kein Kontaktformular, das Daten auf unserem Server speichert. Tischanfragen erstellen Sie in Ihrer eigenen E-Mail- oder WhatsApp-App.</li>
+        <li>Online-Reservierungen speichern wir nur auf unserem eigenen Server und löschen sie 60 Tage nach dem Termin automatisch (siehe „Online-Reservierung“).</li>
         <li>Eine Karte von Google Maps wird nur geladen, wenn Sie ausdrücklich einwilligen.</li>
         <li>Beim Aufruf der Website verarbeitet unser Hoster technisch notwendige Zugriffsdaten (siehe „Server-Logfiles“).</li>
       </ul>
@@ -164,8 +165,9 @@ export default function Datenschutz() {
         Wunschtermin, Personenzahl und Ihre Nachricht), um Ihre Anfrage zu bearbeiten.
       </p>
       <p>
-        Das Formular „Tisch anfragen“ speichert <strong>keine Daten auf unserem Server</strong>. Es erstellt aus Ihren Eingaben lediglich eine
-        Nachricht und öffnet damit Ihre WhatsApp- oder E-Mail-App. Erst wenn Sie die Nachricht dort selbst absenden, erhalten wir sie.
+        Ist die Online-Reservierung vorübergehend nicht erreichbar, erscheint stattdessen ein Formular, das <strong>keine Daten auf unserem
+        Server speichert</strong>. Es erstellt aus Ihren Eingaben lediglich eine Nachricht und öffnet damit Ihre WhatsApp- oder E-Mail-App.
+        Erst wenn Sie die Nachricht dort selbst absenden, erhalten wir sie.
       </p>
       <p>
         Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO, wenn Ihre Anfrage mit einer Reservierung oder einem Vertrag zusammenhängt, im Übrigen
@@ -173,7 +175,21 @@ export default function Datenschutz() {
         abschließend bearbeitet ist und keine gesetzlichen Aufbewahrungspflichten entgegenstehen.
       </p>
 
-      <h2 id="whatsapp">11. WhatsApp</h2>
+      <h2 id="reservierung">11. Online-Reservierung</h2>
+      <p>
+        Wenn Sie über unsere Website einen Tisch reservieren, verarbeiten wir Name, Telefonnummer, E-Mail-Adresse, Datum, Uhrzeit,
+        Personenzahl und Ihren optionalen Wunsch. Die Daten werden ausschließlich auf unserem eigenen Webserver bei netcup gespeichert und
+        nur von uns (Inhaberin und Empfang) in einer passwortgeschützten Verwaltung genutzt, um Ihre Reservierung zu planen und Sie bei
+        Rückfragen zu erreichen. Sie erhalten eine Bestätigung per E-Mail mit einem Link, über den Sie die Reservierung selbst stornieren können.
+      </p>
+      <p>
+        Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Durchführung Ihrer Reservierung). Wir löschen die Daten automatisch
+        {" "}<strong>60 Tage nach dem Reservierungstermin</strong>. Zum Schutz vor missbräuchlichen Massenanfragen speichern wir beim Absenden
+        einen nicht rückrechenbaren Hashwert Ihrer IP-Adresse für höchstens eine Stunde (Art. 6 Abs. 1 lit. f DSGVO). Eine Weitergabe an
+        Dritte findet nicht statt.
+      </p>
+
+      <h2 id="whatsapp">12. WhatsApp</h2>
       <p>
         Sie können uns auch über WhatsApp erreichen. Anbieter ist die WhatsApp Ireland Limited, Merrion Road, Dublin 4, D04 X2K5, Irland, ein
         Unternehmen der Meta-Gruppe. WhatsApp wird erst geöffnet, wenn Sie selbst einen WhatsApp-Link antippen. Beim bloßen Besuch unserer
@@ -186,14 +202,14 @@ export default function Datenschutz() {
         <a href="https://www.whatsapp.com/legal/privacy-policy-eea" {...ext}>Datenschutzrichtlinie von WhatsApp</a>.
       </p>
 
-      <h2 id="links">12. Links zu anderen Anbietern</h2>
+      <h2 id="links">13. Links zu anderen Anbietern</h2>
       <p>
         Unsere Website enthält Links, z. B. zur Routenplanung (Google Maps, Apple Karten), zu Bahnverbindungen (bahn.de) und zu unseren
         Bewertungen auf Google. Diese Angebote werden erst geöffnet, wenn Sie den Link anklicken. Dann gelten die Datenschutzbestimmungen des
         jeweiligen Anbieters. Vor dem Klick werden keine Daten an diese Anbieter übertragen.
       </p>
 
-      <h2 id="bewertungen">13. Gästebewertungen</h2>
+      <h2 id="bewertungen">14. Gästebewertungen</h2>
       <p>
         Wir zeigen ausgewählte, öffentlich auf Google abgegebene Bewertungen unserer Gäste. Die Namen geben wir nur in gekürzter Form wieder
         (Vorname und Anfangsbuchstabe). Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO. Unser berechtigtes Interesse ist es, Besuchern einen
@@ -201,7 +217,7 @@ export default function Datenschutz() {
         kurze Nachricht an uns. Wir entfernen sie dann umgehend.
       </p>
 
-      <h2 id="speicherdauer">14. Speicherdauer</h2>
+      <h2 id="speicherdauer">15. Speicherdauer</h2>
       <p>
         Soweit in dieser Datenschutzerklärung keine speziellere Speicherdauer genannt ist, verbleiben Ihre personenbezogenen Daten bei uns, bis der
         Zweck für die Verarbeitung entfällt. Wenn Sie ein berechtigtes Löschersuchen geltend machen oder eine Einwilligung widerrufen, werden Ihre
@@ -209,7 +225,7 @@ export default function Datenschutz() {
         Aufbewahrungsfristen). Im letztgenannten Fall erfolgt die Löschung nach Fortfall dieser Gründe.
       </p>
 
-      <h2 id="rechte">15. Ihre Rechte</h2>
+      <h2 id="rechte">16. Ihre Rechte</h2>
       <p>Sie haben im Rahmen der gesetzlichen Bestimmungen jederzeit folgende Rechte:</p>
       <ul>
         <li><strong>Auskunft</strong> über Ihre bei uns gespeicherten Daten (Art. 15 DSGVO)</li>
@@ -237,7 +253,7 @@ export default function Datenschutz() {
         </strong>
       </p>
 
-      <h2 id="beschwerde">16. Beschwerderecht bei der Aufsichtsbehörde</h2>
+      <h2 id="beschwerde">17. Beschwerderecht bei der Aufsichtsbehörde</h2>
       <p>
         Wenn Sie der Ansicht sind, dass die Verarbeitung Ihrer Daten gegen die DSGVO verstößt, haben Sie das Recht, sich bei einer
         Datenschutz-Aufsichtsbehörde zu beschweren (Art. 77 DSGVO). Für uns zuständig ist:

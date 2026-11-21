@@ -21,6 +21,8 @@ node scripts/convert-images.mjs  # convert new source images to WebP
 
 **PHP on the server.** There is no fixed menu, only a weekly Tageskarte. It is uploaded via a secret link `public/tageskarte-upload.php?k=<upload_key>` (photos are downscaled in the browser, then converted server-side to an A4 PDF with no extra libs). An optional Telegram webhook `public/api/telegram-tageskarte.php` does the same. Both use `public/_tk/tageskarte-lib.php` (kept inside the webroot because the server's `open_basedir` may forbid reading outside `out/`; direct requests get 404). Config is looked up in `<repo>/mesnerhaus-config.php`, then `out/mesnerhaus-config.php`. The same page also edits the header notice banner (`hinweis.json`, served by `public/hinweis.php`, shown by `NoticeBar` inside `NavScrolled`; optional link and expiry date). Files are stored in `<repo>/storage/` if writable, else `out/tageskarte-daten/` (both gitignored). `public/tageskarte.php` serves them (`?bild` preview JPEG, `?info` JSON). Live site: `mesnerhausarmesberg.de` (canonical, `SITE_URL` in `site.ts`); `landing.mesnerhausarmesberg.de` serves the same `out/` folder. Setup: `server/README.md`. Secrets go in `mesnerhaus-config.php` on the server only, never in git.
 
+**Reservations.** Online booking (`OnlineBooking` → `public/api/reservierung.php`, auto-confirmed while seats are free, max 8 persons) and an admin app at `/reservierungen/` (PHP login, roles admin/team, vanilla JS in `public/reservierungen/app.js`). Shared logic in `public/_tk/resv-lib.php`; data in `resv-*.php` files (JSON behind a PHP exit guard) in the Tageskarte storage dir, purged 60 days after the date. Capacity = seats occupied over the reservation duration, checked in 15-min steps. Guest emails via `mail()`. Docs: `server/RESERVIERUNGEN.md`. `ReservationForm` (WhatsApp/mailto) remains as fallback when the API is unreachable.
+
 **Privacy / consent.** No cookies, no analytics. The only consent-gated service is the Google Maps iframe (`ConsentMap`, two-click). Consent lives in localStorage `mh-consent` via `src/lib/consent.ts` (bump `CONSENT_VERSION` when adding a service, and update `/datenschutz`). `CookieBanner` is mounted in `layout.tsx`; the footer has a „Cookie-Einstellungen“ link. Weather is fetched through `public/wetter.php` (server-side proxy, 30-min cache) so visitor IPs never reach Open-Meteo. Any new third-party request from the browser needs consent gating plus a Datenschutz section.
 
 **Pages.** Home is `src/app/page.tsx` (server component). Legal pages: `src/app/impressum/`, `src/app/datenschutz/` (shared `LegalPage` frame, `SiteFooter`). `trailingSlash: true` so they export as `out/impressum/index.html`.
@@ -35,7 +37,7 @@ node scripts/convert-images.mjs  # convert new source images to WebP
 - `FloatingCTA` — phone + route buttons that appear on mobile after scrolling past the hero
 - `OpenStatus` / `HoursTable` — live open/closed state computed in Europe/Berlin time from `src/lib/hours.ts`
 - `WeatherWidget` — 4-day forecast from Open-Meteo (no key)
-- `ReservationForm` — builds a WhatsApp / mailto table request; no data stored
+- `OnlineBooking` — live availability + booking via the PHP API; falls back to `ReservationForm` (WhatsApp / mailto, no data stored)
 - `ReviewCarousel` — horizontally scrolling review cards
 - `Tageskarte` — preview image + PDF download from `/tageskarte.php?info`; friendly fallback when none is uploaded
 
