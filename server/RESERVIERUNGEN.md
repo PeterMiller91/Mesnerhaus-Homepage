@@ -64,6 +64,18 @@ Online zählt „davon online“, beim Eintragen in der App „Plätze gesamt“
 - Online-Buchung: Spamschutz (unsichtbares Feld, Mindestzeit), höchstens 5 Buchungen je Anschluss und Stunde.
 - Admin-Seiten: Login-Pflicht, CSRF-Schutz, strenge Content-Security-Policy, nicht in Suchmaschinen.
 
+## E-Mail-Vorlagen
+
+Verwaltung → Menü (☰) → **E-Mail-Vorlagen** (nur Admin). Bearbeitbar sind Betreff und Text von:
+
+- **Bestätigung an den Gast** (nach jeder Buchung, online oder beim Eintragen mit Häkchen „Bestätigung senden“)
+- **Storno-Bestätigung an den Gast** (wenn der Gast über den Link storniert, oder beim Stornieren in der App mit Häkchen „Gast per E-Mail informieren“)
+
+Platzhalter: `{name}`, `{datum}`, `{uhrzeit}`, `{personen}`, `{wunsch}`, `{storno_link}`, `{telefon}`, `{adresse}`.
+Eine Zeile, deren Platzhalter leer ist (z. B. „Ihr Wunsch: {wunsch}“ ohne Wunsch), wird weggelassen.
+Live-Vorschau mit Beispieldaten, „Test senden“ und „Standard wiederherstellen“ sind eingebaut.
+Gespeichert in `resv-templates.php` im Speicherordner.
+
 ## E-Mails
 
 Zwei Versandwege:

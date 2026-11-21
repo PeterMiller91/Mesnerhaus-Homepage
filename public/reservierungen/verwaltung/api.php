@@ -18,6 +18,13 @@ $s = rv_settings();
 
 /* ── Lesen ───────────────────────────────────────────────────── */
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+    if (isset($_GET['templates'])) {
+        if (!$isAdmin) out(403, ['ok' => false]);
+        $sample = rv_sample_reservation();
+        out(200, ['ok' => true, 'templates' => rv_templates(), 'defaults' => rv_template_defaults(), 'placeholders' => RV_PLACEHOLDERS,
+            'sample' => ['name' => $sample['name'], 'datum' => rv_date_de($sample['date']), 'uhrzeit' => $sample['time'], 'personen' => '4 Personen',
+                'wunsch' => $sample['note'], 'storno_link' => rv_site_url() . '/reservierung-stornieren.php?t=…', 'telefon' => '0151 110 56 281', 'adresse' => 'Armesberg 2, 95508 Kulmain']]);
+    }
     if (isset($_GET['settings'])) {
         if (!$isAdmin) out(403, ['ok' => false]);
         $users = array_map(function ($id, $u) { return ['id' => $id, 'name' => $u['name'], 'role' => $u['role']]; }, array_keys(rv_users()), rv_users());
@@ -116,16 +123,17 @@ if ($act === 'save') {
 if ($act === 'status') {
     $id = (int)($in['id'] ?? 0); $status = (string)($in['status'] ?? '');
     if (!in_array($status, RV_STATUSES, true)) out(400, ['ok' => false]);
-    $ok = rv_with_lock(function () use ($id, $status, $me) {
+    $item = rv_with_lock(function () use ($id, $status, $me) {
         $d = rv_load();
         foreach ($d['items'] as $i => $r) if ((int)$r['id'] === $id) {
             $d['items'][$i]['status'] = $status; $d['items'][$i]['seen'] = true;
             $d['items'][$i]['updated'] = date('c'); $d['items'][$i]['by'] = $me['name'];
-            return rv_save($d);
+            return rv_save($d) ? $d['items'][$i] : null;
         }
-        return false;
+        return null;
     });
-    out($ok ? 200 : 404, ['ok' => $ok]);
+    $mailed = $item && $status === 'storniert' && !empty($in['notify']) && rv_mail_guest_cancel($item);
+    out($item ? 200 : 404, ['ok' => (bool)$item, 'mailed' => $mailed]);
 }
 
 if ($act === 'seen') {
@@ -178,6 +186,26 @@ if ($act === 'mail_test') {
     out(200, ['ok' => $ok, 'message' => $ok
         ? 'Der Server hat die Test-E-Mail angenommen. Bitte Posteingang und Spam-Ordner prüfen.'
         : 'Versand fehlgeschlagen: ' . ($GLOBALS['rv_mail_error'] ?: 'unbekannter Fehler')]);
+}
+
+if ($act === 'templates') {
+    $defaults = rv_template_defaults(); $save = [];
+    foreach ((array)($in['templates'] ?? []) as $k => $t) {
+        if (!isset($defaults[$k]) || !is_array($t)) continue;
+        $subj = trim(str_replace(["\r", "\n"], ' ', (string)($t['subject'] ?? '')));
+        $body = str_replace("\r\n", "\n", (string)($t['body'] ?? ''));
+        if (strlen($subj) > 200 || strlen($body) > 6000) out(400, ['ok' => false, 'message' => 'Betreff oder Text ist zu lang.']);
+        $save[$k] = ['subject' => $subj, 'body' => $body];   // leer = Standard
+    }
+    out(rv_write_json('resv-templates', $save) ? 200 : 500, ['ok' => true, 'message' => 'Vorlagen gespeichert.']);
+}
+
+if ($act === 'template_test') {
+    $to = trim((string)($in['to'] ?? '')); $key = (string)($in['key'] ?? '');
+    if (!filter_var($to, FILTER_VALIDATE_EMAIL)) out(400, ['ok' => false, 'message' => 'Bitte eine gültige E-Mail-Adresse eingeben.']);
+    if (!isset(rv_template_defaults()[$key])) out(400, ['ok' => false]);
+    $ok = rv_mail_template($key, rv_sample_reservation(), $to);
+    out(200, ['ok' => $ok, 'message' => $ok ? 'Test verschickt (mit Beispieldaten). Gespeicherte Vorlage wurde verwendet.' : 'Versand fehlgeschlagen: ' . ($GLOBALS['rv_mail_error'] ?: 'unbekannter Fehler')]);
 }
 
 if ($act === 'user_password') {

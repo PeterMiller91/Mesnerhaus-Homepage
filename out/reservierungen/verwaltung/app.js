@@ -71,7 +71,7 @@
         '<button class="btn primary hide-sm" data-act="new">' + ico('plus') + 'Eintragen</button>' +
         '<div class="menu"><button class="icon-btn" data-act="menu" aria-label="Menü" aria-expanded="' + S.menu + '">' + ico('menu') + '</button>' +
           (S.menu ? '<div class="menu-list" role="menu"><div class="who">Angemeldet als <b>' + esc(boot.user.name) + '</b></div>' +
-            (isAdmin ? '<button role="menuitem" data-act="settings">Einstellungen</button>' : '') +
+            (isAdmin ? '<button role="menuitem" data-act="settings">Einstellungen</button><button role="menuitem" data-act="templates">E-Mail-Vorlagen</button>' : '') +
             '<button role="menuitem" data-act="print">Tagesliste drucken</button>' +
             '<button role="menuitem" data-act="password">Passwort ändern</button>' +
             '<button role="menuitem" data-act="logout">Abmelden</button></div>' : '') +
@@ -170,14 +170,16 @@
       '<label>Quelle<select name="source"' + (r && r.source === 'online' ? ' disabled' : '') + '>' + opt(SOURCE, v.source) + '</select></label>' +
       '<label>Status<select name="status">' + opt(STATUS, v.status) + '</select></label></div>' +
       (!r ? '<label class="check"><input type="checkbox" name="send_mail"> Bestätigung per E-Mail an den Gast senden</label>' : '');
-    var foot = (r && (r.status === 'bestaetigt') ? '<button type="button" class="btn danger" data-cancel>Stornieren</button>' : '') +
+    var foot = (r && r.status === 'bestaetigt' && r.email ? '<label class="check" style="font-size:13px;margin-right:8px"><input type="checkbox" data-notify checked> Gast per E-Mail informieren</label>' : '') +
+      (r && (r.status === 'bestaetigt') ? '<button type="button" class="btn danger" data-cancel>Stornieren</button>' : '') +
       '<span style="flex:1"></span><button type="button" class="btn ghost" data-close2>Abbrechen</button><button type="submit" class="btn primary">Speichern</button>';
     var dlg = dialog(r ? r.name : 'Reservierung eintragen', body, foot);
     $('[data-close2]', dlg).addEventListener('click', function () { dlg.close(); });
     if ($('[data-cancel]', dlg)) $('[data-cancel]', dlg).addEventListener('click', function (e) {
       var b = e.currentTarget;
       if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Wirklich stornieren?'; return; }
-      api('POST', { action: 'status', id: r.id, status: 'storniert' }).then(function () { dlg.close(); toast('Storniert'); load(); });
+      var notify = !!$('[data-notify]', dlg) && $('[data-notify]', dlg).checked;
+      api('POST', { action: 'status', id: r.id, status: 'storniert', notify: notify }).then(function (j) { dlg.close(); toast(j.mailed ? 'Storniert, Gast informiert' : 'Storniert'); load(); });
     });
     var form = $('form', dlg);
     form.addEventListener('submit', function (e) {
@@ -280,6 +282,93 @@
     });
   }
 
+  /* ── E-Mail-Vorlagen (Admin) ────────────────────────────── */
+  function openTemplates() {
+    api('GET', null, '?templates').then(function (j) {
+      var keys = Object.keys(j.templates), cur = keys[0];
+      var data = {};
+      keys.forEach(function (k) { data[k] = { subject: j.templates[k].subject, body: j.templates[k].body }; });
+      // wie auf dem Server: Zeilen mit leerem Platzhalter entfallen
+      var render = function (tpl) {
+        var out = [];
+        tpl.split('\n').forEach(function (line) {
+          var empty = false;
+          var r = line.replace(/\{([a-z_]+)\}/g, function (m, k) {
+            if (!(k in j.sample)) return m;
+            if (j.sample[k] === '') empty = true;
+            return j.sample[k];
+          });
+          if (!empty) out.push(r);
+        });
+        return out.join('\n').replace(/\n{3,}/g, '\n\n');
+      };
+      var chips = Object.keys(j.placeholders).map(function (k) {
+        return '<button type="button" class="btn small ghost" data-ph="' + esc(k) + '" title="' + esc(j.placeholders[k]) + '">{' + esc(k) + '}</button>';
+      }).join('');
+      var body =
+        '<div class="tabs" role="tablist">' + keys.map(function (k) { return '<button type="button" role="tab" data-tab="' + k + '">' + esc(j.templates[k].label) + '</button>'; }).join('') + '</div>' +
+        '<label>Betreff<input name="subject" maxlength="200"></label>' +
+        '<label>Text<textarea name="body" rows="12" style="min-height:240px"></textarea></label>' +
+        '<div><p class="hint" style="margin-bottom:6px">Platzhalter antippen, um sie an der Cursorposition einzufügen. Eine Zeile, deren Platzhalter leer ist (z. B. kein Wunsch), wird weggelassen.</p><div class="quick" style="margin:0">' + chips + '</div></div>' +
+        '<div><p class="hint" style="margin-bottom:6px"><b>Vorschau</b> mit Beispieldaten</p><div class="preview"><div class="pv-subj"></div><pre class="pv-body"></pre></div></div>' +
+        '<div class="grid2" style="align-items:end"><label>Test an<input type="email" data-tto placeholder="deine@adresse.de"></label><button type="button" class="btn small ghost" data-tsend>Test senden (gespeicherte Vorlage)</button></div>' +
+        '<p class="alert" data-tres hidden></p>';
+      var dlg = dialog('E-Mail-Vorlagen', body, '<button type="button" class="btn ghost" data-reset>Standard wiederherstellen</button><span style="flex:1"></span>' +
+        '<button type="button" class="btn ghost" data-close2>Schließen</button><button type="submit" class="btn primary">Speichern</button>');
+      var form = $('form', dlg), subj = form.subject, txt = form.body, last = txt;
+      var preview = function () {
+        $('.pv-subj', dlg).textContent = 'Betreff: ' + render(subj.value);
+        $('.pv-body', dlg).textContent = render(txt.value);
+      };
+      var show = function () {
+        $$('[data-tab]', dlg).forEach(function (b) {
+          b.setAttribute('aria-selected', String(b.dataset.tab === cur));
+          b.className = 'tab' + (b.dataset.tab === cur ? ' on' : '');
+        });
+        subj.value = data[cur].subject; txt.value = data[cur].body; preview();
+      };
+      subj.addEventListener('input', function () { data[cur].subject = subj.value; preview(); });
+      txt.addEventListener('input', function () { data[cur].body = txt.value; preview(); });
+      subj.addEventListener('focus', function () { last = subj; });
+      txt.addEventListener('focus', function () { last = txt; });
+      $$('[data-tab]', dlg).forEach(function (b) { b.addEventListener('click', function () { cur = b.dataset.tab; show(); }); });
+      $$('[data-ph]', dlg).forEach(function (b) {
+        b.addEventListener('mousedown', function (e) { e.preventDefault(); });
+        b.addEventListener('click', function () {
+          var el = last, ins = '{' + b.dataset.ph + '}', a = el.selectionStart || 0, z = el.selectionEnd || 0;
+          el.value = el.value.slice(0, a) + ins + el.value.slice(z);
+          el.focus(); el.selectionStart = el.selectionEnd = a + ins.length;
+          el.dispatchEvent(new Event('input'));
+        });
+      });
+      $('[data-reset]', dlg).addEventListener('click', function (e) {
+        var b = e.currentTarget;
+        if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Wirklich? Nochmal tippen'; return; }
+        data[cur] = { subject: j.defaults[cur].subject, body: j.defaults[cur].body }; show();
+        b.dataset.sure = ''; b.textContent = 'Standard wiederherstellen';
+      });
+      $('[data-close2]', dlg).addEventListener('click', function () { dlg.close(); });
+      $('[data-tsend]', dlg).addEventListener('click', function () {
+        var res = $('[data-tres]', dlg);
+        api('POST', { action: 'template_test', key: cur, to: $('[data-tto]', dlg).value }).then(function (r) {
+          res.textContent = r.message || 'Fehler'; res.className = 'alert ' + (r.ok ? 'ok' : 'err'); res.hidden = false;
+        });
+      });
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (data.confirm && data.confirm.body.indexOf('{storno_link}') < 0 && !form.dataset.warned) {
+          form.dataset.warned = '1';
+          showErr(dlg, 'Hinweis: In der Bestätigung fehlt {storno_link}. Gäste können dann nicht selbst stornieren. Nochmal „Speichern“ zum Bestätigen.');
+          return;
+        }
+        api('POST', { action: 'templates', templates: data }).then(function (r) {
+          if (r.ok) { toast('Vorlagen gespeichert'); dlg.close(); } else showErr(dlg, r.message || 'Fehler');
+        });
+      });
+      show();
+    });
+  }
+
   function openPassword() {
     var dlg = dialog('Passwort ändern', '<label>Bisheriges Passwort<input type="password" name="old" required autocomplete="current-password"></label>' +
       '<label>Neues Passwort (mind. 10 Zeichen)<input type="password" name="new" required minlength="10" autocomplete="new-password"></label>',
@@ -313,6 +402,7 @@
     else if (act === 'print') { render(); setTimeout(function () { window.print(); }, 50); }
     else if (act === 'menu') { S.menu = !S.menu; render(); }
     else if (act === 'settings') { render(); openSettings(); }
+    else if (act === 'templates') { render(); openTemplates(); }
     else if (act === 'password') { render(); openPassword(); }
     else if (act === 'logout') document.getElementById('logout').submit();
     else if (act === 'seenall') api('POST', { action: 'seen', ids: S.data.unseen.map(function (u) { return u.id; }) }).then(function () { load(); });

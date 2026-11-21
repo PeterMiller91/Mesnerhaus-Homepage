@@ -255,17 +255,82 @@ function rv_date_de(string $date): string {
     return $tage[(int)date('w', $ts)] . ', ' . date('d.m.Y', $ts);
 }
 
-function rv_mail_guest_confirm(array $r): bool {
-    $link = rv_site_url() . '/reservierung-stornieren.php?t=' . $r['token'];
-    $body = "Grüß Gott " . $r['name'] . ",\n\n"
-        . "Ihre Reservierung im Mesnerhaus am Armesberg ist bestätigt:\n\n"
-        . "  " . rv_date_de($r['date']) . " um " . $r['time'] . " Uhr\n"
-        . "  " . $r['persons'] . " " . ((int)$r['persons'] === 1 ? 'Person' : 'Personen') . "\n"
-        . ($r['note'] !== '' ? "  Ihr Wunsch: " . $r['note'] . "\n" : '')
-        . "\nAdresse: Armesberg 2, 95508 Kulmain\n\n"
-        . "Falls Sie nicht kommen können, stornieren Sie bitte hier, damit andere Gäste den Platz bekommen:\n$link\n\n"
-        . "Wir freuen uns auf Sie!\nIhr Mesnerhaus am Armesberg\nTel. 0151 110 56 281\n";
-    return rv_mail((string)$r['email'], 'Ihre Reservierung im Mesnerhaus: ' . date('d.m.', strtotime($r['date'])) . ' um ' . $r['time'] . ' Uhr', $body, '', 'Bestätigung an Gast');
+/* ── E-Mail-Vorlagen (in der Verwaltung bearbeitbar) ─────────── */
+const RV_PLACEHOLDERS = [
+    'name'        => 'Name des Gastes',
+    'datum'       => 'z. B. Sonntag, 22.11.2026',
+    'uhrzeit'     => 'z. B. 12:00',
+    'personen'    => 'z. B. 4 Personen',
+    'wunsch'      => 'Wunsch des Gastes (leer, wenn keiner)',
+    'storno_link' => 'Link zum Stornieren',
+    'telefon'     => 'Telefonnummer des Mesnerhaus',
+    'adresse'     => 'Adresse des Mesnerhaus',
+];
+
+function rv_template_defaults(): array {
+    return [
+        'confirm' => [
+            'label'   => 'Bestätigung an den Gast',
+            'subject' => 'Ihre Reservierung im Mesnerhaus: {datum} um {uhrzeit} Uhr',
+            'body'    => "Grüß Gott {name},\n\nIhre Reservierung im Mesnerhaus am Armesberg ist bestätigt:\n\n  {datum} um {uhrzeit} Uhr\n  {personen}\n  Ihr Wunsch: {wunsch}\n\nAdresse: {adresse}\n\nFalls Sie nicht kommen können, stornieren Sie bitte hier, damit andere Gäste den Platz bekommen:\n{storno_link}\n\nWir freuen uns auf Sie!\nIhr Mesnerhaus am Armesberg\nTel. {telefon}",
+        ],
+        'cancel' => [
+            'label'   => 'Storno-Bestätigung an den Gast',
+            'subject' => 'Ihre Reservierung am {datum} ist storniert',
+            'body'    => "Grüß Gott {name},\n\nIhre Reservierung im Mesnerhaus am Armesberg für {datum} um {uhrzeit} Uhr ({personen}) ist storniert.\n\nSchade, dass es diesmal nicht klappt. Wir freuen uns, wenn Sie ein anderes Mal vorbeikommen.\n\nIhr Mesnerhaus am Armesberg\nTel. {telefon}",
+        ],
+    ];
+}
+
+function rv_templates(): array {
+    $saved = rv_read_json('resv-templates', []);
+    $out = [];
+    foreach (rv_template_defaults() as $k => $d) {
+        $out[$k] = [
+            'label'   => $d['label'],
+            'subject' => is_string($saved[$k]['subject'] ?? null) && trim($saved[$k]['subject']) !== '' ? $saved[$k]['subject'] : $d['subject'],
+            'body'    => is_string($saved[$k]['body'] ?? null) && trim($saved[$k]['body']) !== '' ? $saved[$k]['body'] : $d['body'],
+        ];
+    }
+    return $out;
+}
+
+/* Platzhalter ersetzen. Eine Zeile, deren Platzhalter leer bleibt (z. B. „Ihr Wunsch: {wunsch}“), entfällt. */
+function rv_render(string $tpl, array $r): string {
+    $p = (int)$r['persons'];
+    $vals = [
+        'name' => (string)$r['name'], 'datum' => rv_date_de((string)$r['date']), 'uhrzeit' => (string)$r['time'],
+        'personen' => $p . ' ' . ($p === 1 ? 'Person' : 'Personen'), 'wunsch' => trim((string)($r['note'] ?? '')),
+        'storno_link' => rv_site_url() . '/reservierung-stornieren.php?t=' . ($r['token'] ?? ''),
+        'telefon' => '0151 110 56 281', 'adresse' => 'Armesberg 2, 95508 Kulmain',
+    ];
+    $lines = [];
+    foreach (preg_split('/\r\n|\r|\n/', $tpl) as $line) {
+        $empty = false;
+        $line = preg_replace_callback('/\{([a-z_]+)\}/', function ($m) use ($vals, &$empty) {
+            if (!array_key_exists($m[1], $vals)) return $m[0];
+            if ($vals[$m[1]] === '') $empty = true;
+            return $vals[$m[1]];
+        }, $line);
+        if (!$empty) $lines[] = $line;
+    }
+    return preg_replace("/\n{3,}/", "\n\n", implode("\n", $lines));
+}
+
+function rv_mail_template(string $key, array $r, string $to = ''): bool {
+    $t = rv_templates()[$key] ?? null;
+    if (!$t) return false;
+    $subject = str_replace(["\r", "\n"], ' ', rv_render($t['subject'], $r));
+    return rv_mail($to !== '' ? $to : (string)$r['email'], $subject, rv_render($t['body'], $r) . "\n", '', $t['label']);
+}
+
+function rv_mail_guest_confirm(array $r): bool { return rv_mail_template('confirm', $r); }
+function rv_mail_guest_cancel(array $r): bool { return ($r['email'] ?? '') !== '' && rv_mail_template('cancel', $r); }
+
+/* Beispiel-Reservierung für Vorschau und Testversand */
+function rv_sample_reservation(): array {
+    $d = date('Y-m-d', strtotime('next sunday'));
+    return ['name' => 'Familie Beispiel', 'date' => $d, 'time' => '12:00', 'persons' => 4, 'note' => 'Bitte einen Kinderstuhl', 'token' => str_repeat('0', 32), 'email' => ''];
 }
 
 function rv_mail_owner(array $r, string $what): bool {

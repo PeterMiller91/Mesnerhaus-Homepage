@@ -30,11 +30,14 @@ if ($valid) {
                 $d['items'][$i]['seen'] = false;
                 $d['items'][$i]['updated'] = date('c');
                 $d['items'][$i]['by'] = 'Gast';
-                rv_save($d);
-                rv_mail_owner($d['items'][$i], 'Storniert vom Gast');
+                if (rv_save($d)) $d['items'][$i]['_changed'] = true;
             }
             return $d['items'][$i];
         });
+        if ($r && !empty($r['_changed'])) {           // E-Mails erst nach Freigabe der Sperre
+            rv_mail_owner($r, 'Storniert vom Gast');
+            rv_mail_guest_cancel($r);
+        }
         if ($r) $msg = 'Ihre Reservierung wurde storniert. Danke, dass Sie Bescheid gegeben haben!';
     } else {
         $d = rv_load(); $i = $find($d); $r = $i === null ? null : $d['items'][$i];
