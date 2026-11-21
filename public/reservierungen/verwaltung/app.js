@@ -163,8 +163,9 @@
         '<label>Personen<input type="number" name="persons" min="1" max="200" required value="' + esc(v.persons) + '"></label>' +
       '</div>' +
       '<label>Name<input name="name" required maxlength="80" value="' + esc(v.name) + '" autocomplete="off"></label>' +
-      '<div class="grid2"><label>Telefon<input name="phone" type="tel" maxlength="40" value="' + esc(v.phone) + '" autocomplete="off"></label>' +
-      '<label>E-Mail<input name="email" type="email" maxlength="120" value="' + esc(v.email) + '" autocomplete="off"></label></div>' +
+      '<div class="grid2"><label>Telefon *<input name="phone" type="tel" maxlength="40" value="' + esc(v.phone) + '" autocomplete="off"></label>' +
+      '<label>E-Mail *<input name="email" type="email" maxlength="120" value="' + esc(v.email) + '" autocomplete="off"></label></div>' +
+      '<p class="hint" style="margin-top:-6px">* Pflicht bei neuen Reservierungen. Ausnahme: Quelle „Vor Ort“.</p>' +
       '<label>Notiz / Wunsch<textarea name="note" maxlength="300">' + esc(v.note) + '</textarea></label>' +
       '<div class="grid3"><label>Tisch<input name="table" maxlength="30" value="' + esc(v.table) + '"></label>' +
       '<label>Quelle<select name="source"' + (r && r.source === 'online' ? ' disabled' : '') + '>' + opt(SOURCE, v.source) + '</select></label>' +
@@ -187,6 +188,10 @@
       var f = new FormData(form), data = { action: 'save' };
       f.forEach(function (val, key) { data[key] = val; });
       data.persons = parseInt(data.persons, 10) || 0;
+      if (!r && data.source !== 'vor_ort') {
+        if (String(data.phone || '').replace(/\D/g, '').length < 6) { showErr(dlg, 'Bitte eine Telefonnummer eintragen.'); form.phone.focus(); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(data.email || '').trim())) { showErr(dlg, 'Bitte eine gültige E-Mail-Adresse eintragen.'); form.email.focus(); return; }
+      }
       data.send_mail = !!form.send_mail && form.send_mail.checked;
       if (r) { data.id = r.id; data.source = r.source; }
       var send = function (force) {

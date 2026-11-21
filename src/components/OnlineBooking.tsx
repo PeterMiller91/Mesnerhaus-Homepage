@@ -100,6 +100,9 @@ export default function OnlineBooking() {
     e.preventDefault();
     setError("");
     if (!day || !time) { setError("Bitte Tag und Uhrzeit wählen."); return; }
+    if (name.trim().length < 2) { setError("Bitte Ihren Namen angeben."); document.getElementById("ob-name")?.focus(); return; }
+    if (phone.replace(/\D/g, "").length < 6) { setError("Bitte eine Telefonnummer angeben. Sie ist Pflicht, damit wir Sie bei Rückfragen erreichen."); document.getElementById("ob-phone")?.focus(); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) { setError("Bitte eine gültige E-Mail-Adresse angeben. Dorthin schicken wir die Bestätigung."); document.getElementById("ob-mail")?.focus(); return; }
     setBusy(true);
     try {
       const r = await fetch(API, {
@@ -182,15 +185,15 @@ export default function OnlineBooking() {
 
       {time && (
         <fieldset className="grid grid-cols-2 gap-3">
-          <legend className="text-sm font-bold text-[var(--color-dark)] mb-2">4. Ihre Daten</legend>
-          <label className={`${lbl} col-span-2`}>Name
-            <input id="ob-name" required autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} className={field} placeholder="Vor- und Nachname" />
+          <legend className="text-sm font-bold text-[var(--color-dark)] mb-2">4. Ihre Daten <span className="font-normal text-xs text-[var(--color-muted)]">(* Pflichtfeld)</span></legend>
+          <label className={`${lbl} col-span-2`}>Name *
+            <input id="ob-name" required aria-required="true" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} className={field} placeholder="Vor- und Nachname" />
           </label>
-          <label className={lbl}>Telefon
-            <input id="ob-phone" required type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className={field} placeholder="Für Rückfragen" />
+          <label className={lbl}>Telefon *
+            <input id="ob-phone" required aria-required="true" minLength={6} type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className={field} placeholder="Für Rückfragen" />
           </label>
-          <label className={lbl}>E-Mail
-            <input id="ob-mail" required type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={field} placeholder="Für die Bestätigung" />
+          <label className={lbl}>E-Mail *
+            <input id="ob-mail" required aria-required="true" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} className={field} placeholder="Für die Bestätigung" />
           </label>
           <label className={`${lbl} col-span-2`}>Wunsch (optional)
             <input id="ob-note" value={note} maxLength={300} onChange={(e) => setNote(e.target.value)} className={field} placeholder="z. B. Kinderstuhl, Geburtstag, Hund" />

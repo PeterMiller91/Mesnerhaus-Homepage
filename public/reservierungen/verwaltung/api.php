@@ -92,6 +92,10 @@ if ($act === 'save') {
     $email = rv_clean((string)($in['email'] ?? ''), 120);
     if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) out(400, ['ok' => false, 'message' => 'Die E-Mail-Adresse ist ungültig.']);
     $source = in_array($in['source'] ?? '', RV_SOURCES, true) ? $in['source'] : 'telefon';
+    if ($id === 0 && $source !== 'vor_ort') {
+        if (strlen(preg_replace('/\D/', '', (string)($in['phone'] ?? ''))) < 6) out(400, ['ok' => false, 'message' => 'Bitte eine Telefonnummer eintragen.']);
+        if ($email === '') out(400, ['ok' => false, 'message' => 'Bitte eine E-Mail-Adresse eintragen.']);
+    }
     $status = in_array($in['status'] ?? '', RV_STATUSES, true) ? $in['status'] : 'bestaetigt';
 
     $res = rv_with_lock(function () use ($s, $id, $date, $time, $persons, $name, $email, $source, $status, $in, $me) {
