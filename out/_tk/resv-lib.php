@@ -394,6 +394,50 @@ function rv_rate_ok(): bool {
     return true;
 }
 
+/* ── Tischplan ───────────────────────────────────────────────
+   Koordinaten in Raster-Einheiten: Raum 100 breit × 60 hoch.            */
+function rv_default_plan(): array {
+    $t = function ($id, $name, $seats, $x, $y, $w, $h, $shape = 'rect') {
+        return ['id' => $id, 'name' => $name, 'seats' => $seats, 'area' => 'gaststube', 'x' => $x, 'y' => $y, 'w' => $w, 'h' => $h, 'shape' => $shape];
+    };
+    return [
+        'example' => true,
+        'areas' => [['id' => 'gaststube', 'name' => 'Gaststube'], ['id' => 'terrasse', 'name' => 'Terrasse']],
+        'tables' => [
+            $t('t1', '1', 4, 4, 5, 12, 10), $t('t2', '2', 4, 20, 5, 12, 10), $t('t3', '3', 4, 36, 5, 12, 10),
+            $t('t4', '4', 4, 4, 22, 12, 10), $t('t5', '5', 4, 20, 22, 12, 10), $t('t6', '6', 4, 36, 22, 12, 10),
+            $t('t7', '7', 6, 58, 5, 18, 10), $t('t8', '8', 6, 58, 22, 18, 10), $t('t9', '9', 6, 58, 39, 18, 10),
+            $t('t10', '10', 6, 80, 5, 16, 16, 'round'), $t('t11', '11', 6, 80, 30, 16, 16, 'round'),
+        ],
+    ];
+}
+
+function rv_plan(): array {
+    $p = rv_read_json('resv-tables', []);
+    return isset($p['tables']) && is_array($p['tables']) ? $p : rv_default_plan();
+}
+
+function rv_table_names(array $ids, ?array $plan = null): string {
+    $plan = $plan ?? rv_plan(); $names = [];
+    foreach ($plan['tables'] as $t) if (in_array($t['id'], $ids, true)) $names[] = $t['name'];
+    return $names ? 'Tisch ' . implode(' + ', $names) : '';
+}
+
+/* Belegt ein anderer aktiver Gast einen dieser Tische im Zeitraum der Reservierung? Liefert Tischnamen. */
+function rv_table_conflicts(array $items, array $r, array $tableIds, int $duration, ?array $plan = null): array {
+    $start = rv_min($r['time']); $end = $start + $duration; $hit = [];
+    foreach ($items as $o) {
+        if ((int)$o['id'] === (int)($r['id'] ?? 0) || $o['date'] !== $r['date'] || !in_array($o['status'], RV_ACTIVE, true)) continue;
+        $os = rv_min($o['time']);
+        if ($os >= $end || $os + $duration <= $start) continue;
+        foreach ((array)($o['tables'] ?? []) as $tid) if (in_array($tid, $tableIds, true)) $hit[$tid] = $o['name'];
+    }
+    $out = [];
+    $plan = $plan ?? rv_plan();
+    foreach ($plan['tables'] as $t) if (isset($hit[$t['id']])) $out[] = 'Tisch ' . $t['name'] . ' (' . $hit[$t['id']] . ')';
+    return $out;
+}
+
 /* Öffentliche Sicht auf eine Reservierung (ohne interne Felder). */
 function rv_public_view(array $r): array {
     return ['date' => $r['date'], 'time' => $r['time'], 'persons' => (int)$r['persons'], 'name' => $r['name'], 'status' => $r['status']];

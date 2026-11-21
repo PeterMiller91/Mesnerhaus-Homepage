@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         'seats' => (int)$s['seats'], 'duration' => (int)$s['duration'], 'online_enabled' => (bool)$s['online_enabled'],
         'items' => $items, 'load' => $load,
         'stats' => ['count' => count($active), 'guests' => array_sum(array_map(function ($r) { return (int)$r['persons']; }, $active)), 'peak' => $load ? max(array_column($load, 'guests')) : 0],
-        'next' => $next, 'unseen' => $unseen,
+        'next' => $next, 'unseen' => $unseen, 'plan' => rv_plan(),
     ]);
 }
 
@@ -102,13 +102,24 @@ if ($act === 'save') {
         $d = rv_load();
         $free = rv_free($s, $d['items'], $date, $time, false, $id);
         if (in_array($status, RV_ACTIVE, true) && $persons > $free && empty($in['force'])) return ['warn' => $free];
+        $plan = rv_plan(); $valid = array_column($plan['tables'], 'id');
+        $tables = array_values(array_unique(array_filter(array_map('strval', (array)($in['tables'] ?? [])), function ($t) use ($valid) { return in_array($t, $valid, true); })));
+        if ($tables && in_array($status, RV_ACTIVE, true)) {
+            $c = rv_table_conflicts($d['items'], ['id' => $id, 'date' => $date, 'time' => $time], $tables, (int)$s['duration'], $plan);
+            if ($c) return ['conflict' => $c];
+        }
         $fields = [
+            'tables' => $tables, 'table' => rv_table_names($tables, $plan),
             'date' => $date, 'time' => $time, 'persons' => $persons, 'name' => $name, 'email' => $email,
             'phone' => rv_clean((string)($in['phone'] ?? ''), 40), 'note' => rv_clean((string)($in['note'] ?? ''), 300),
-            'table' => rv_clean((string)($in['table'] ?? ''), 30), 'status' => $status, 'updated' => date('c'), 'by' => $me['name'],
+            'status' => $status, 'updated' => date('c'), 'by' => $me['name'],
         ];
         if ($id > 0) {
-            foreach ($d['items'] as $i => $r) if ((int)$r['id'] === $id) { $d['items'][$i] = array_merge($r, $fields, ['seen' => true]); $saved = $d['items'][$i]; }
+            foreach ($d['items'] as $i => $r) if ((int)$r['id'] === $id) {
+                // alter Freitext-Tisch bleibt erhalten, solange kein Tisch aus dem Plan gewählt ist
+                if (!$fields['tables'] && empty($r['tables']) && !empty($r['table'])) $fields['table'] = $r['table'];
+                $d['items'][$i] = array_merge($r, $fields, ['seen' => true]); $saved = $d['items'][$i];
+            }
             if (empty($saved)) return ['missing' => true];
         } else {
             $saved = array_merge($fields, ['id' => (int)$d['next_id'], 'source' => $source, 'seen' => true, 'token' => rv_new_token(), 'created' => date('c')]);
@@ -116,12 +127,67 @@ if ($act === 'save') {
         }
         return rv_save($d) ? ['item' => $saved, 'new' => $id === 0] : ['fail' => true];
     });
+    if (isset($res['conflict'])) out(409, ['ok' => false, 'message' => 'Schon belegt: ' . implode(', ', $res['conflict']) . '.']);
     if (isset($res['warn'])) out(409, ['ok' => false, 'over' => true, 'message' => 'Zu dieser Zeit sind nur noch ' . $res['warn'] . ' Plätze frei. Trotzdem eintragen?']);
     if (!empty($res['missing'])) out(404, ['ok' => false, 'message' => 'Reservierung nicht gefunden.']);
     if (!empty($res['fail'])) out(500, ['ok' => false, 'message' => 'Speichern fehlgeschlagen.']);
     $mailed = false;
     if ($res['new'] && !empty($in['send_mail']) && $res['item']['email'] !== '') $mailed = rv_mail_guest_confirm($res['item']);
     out(200, ['ok' => true, 'id' => $res['item']['id'], 'mailed' => $mailed]);
+}
+
+if ($act === 'assign') {
+    $id = (int)($in['id'] ?? 0);
+    $res = rv_with_lock(function () use ($id, $in, $s, $me) {
+        $d = rv_load(); $plan = rv_plan(); $valid = array_column($plan['tables'], 'id');
+        $tables = array_values(array_unique(array_filter(array_map('strval', (array)($in['tables'] ?? [])), function ($t) use ($valid) { return in_array($t, $valid, true); })));
+        foreach ($d['items'] as $i => $r) if ((int)$r['id'] === $id) {
+            $c = rv_table_conflicts($d['items'], $r, $tables, (int)$s['duration'], $plan);
+            if ($c) return ['conflict' => $c];
+            $d['items'][$i]['tables'] = $tables; $d['items'][$i]['table'] = rv_table_names($tables, $plan);
+            $d['items'][$i]['updated'] = date('c'); $d['items'][$i]['by'] = $me['name'];
+            return rv_save($d) ? ['ok' => true] : ['fail' => true];
+        }
+        return ['missing' => true];
+    });
+    if (isset($res['conflict'])) out(409, ['ok' => false, 'message' => 'Schon belegt: ' . implode(', ', $res['conflict']) . '.']);
+    out(!empty($res['ok']) ? 200 : 400, ['ok' => !empty($res['ok'])]);
+}
+
+if ($act === 'auto_assign') {
+    $date = (string)($in['date'] ?? '');
+    if (!rv_valid_date($date)) out(400, ['ok' => false]);
+    $res = rv_with_lock(function () use ($date, $s) {
+        $d = rv_load(); $plan = rv_plan(); $dur = (int)$s['duration'];
+        $idx = array_keys(array_filter($d['items'], function ($r) use ($date) {
+            return $r['date'] === $date && in_array($r['status'], RV_ACTIVE, true) && empty($r['tables']);
+        }));
+        usort($idx, function ($a, $b) use ($d) { return [$d['items'][$a]['time'], -(int)$d['items'][$a]['persons']] <=> [$d['items'][$b]['time'], -(int)$d['items'][$b]['persons']]; });
+        $done = 0; $left = [];
+        foreach ($idx as $i) {
+            $r = $d['items'][$i]; $p = (int)$r['persons'];
+            $free = array_values(array_filter($plan['tables'], function ($t) use ($d, $r, $dur, $plan) { return !rv_table_conflicts($d['items'], $r, [$t['id']], $dur, $plan); }));
+            $best = null;
+            foreach ($free as $t) if ((int)$t['seats'] >= $p && (!$best || (int)$t['seats'] < (int)$best[0]['seats'])) $best = [$t];
+            if (!$best) {   // zwei Tische im selben Bereich zusammenstellen
+                $bestSum = PHP_INT_MAX;
+                foreach ($free as $a) foreach ($free as $b) {
+                    if ($a['id'] >= $b['id'] || $a['area'] !== $b['area']) continue;
+                    $sum = (int)$a['seats'] + (int)$b['seats'];
+                    if ($sum >= $p && $sum < $bestSum) { $bestSum = $sum; $best = [$a, $b]; }
+                }
+            }
+            if ($best) {
+                $ids = array_column($best, 'id');
+                $d['items'][$i]['tables'] = $ids; $d['items'][$i]['table'] = rv_table_names($ids, $plan); $done++;
+            } else $left[] = $r['name'];
+        }
+        if ($done) rv_save($d);
+        return ['done' => $done, 'left' => $left];
+    });
+    $msg = $res['done'] ? $res['done'] . ' zugewiesen.' : 'Nichts zuzuweisen.';
+    if ($res['left']) $msg .= ' Kein passender Tisch frei für: ' . implode(', ', $res['left']) . '.';
+    out(200, ['ok' => true, 'message' => $msg]);
 }
 
 if ($act === 'status') {
@@ -190,6 +256,32 @@ if ($act === 'mail_test') {
     out(200, ['ok' => $ok, 'message' => $ok
         ? 'Der Server hat die Test-E-Mail angenommen. Bitte Posteingang und Spam-Ordner prüfen.'
         : 'Versand fehlgeschlagen: ' . ($GLOBALS['rv_mail_error'] ?: 'unbekannter Fehler')]);
+}
+
+if ($act === 'plan_save') {
+    $n = (array)($in['plan'] ?? []);
+    $areas = [];
+    foreach ((array)($n['areas'] ?? []) as $a) {
+        $id = preg_replace('/[^a-z0-9_-]/', '', strtolower((string)($a['id'] ?? '')));
+        if ($id !== '') $areas[] = ['id' => $id, 'name' => rv_clean((string)($a['name'] ?? $id), 30)];
+    }
+    if (!$areas) out(400, ['ok' => false, 'message' => 'Mindestens ein Bereich nötig.']);
+    $areaIds = array_column($areas, 'id'); $tables = []; $seen = [];
+    foreach ((array)($n['tables'] ?? []) as $t) {
+        $id = preg_replace('/[^a-z0-9_-]/i', '', (string)($t['id'] ?? ''));
+        if ($id === '' || isset($seen[$id])) continue;
+        $seen[$id] = true;
+        $w = max(4, min(60, (int)($t['w'] ?? 12))); $h = max(4, min(40, (int)($t['h'] ?? 10)));
+        $tables[] = [
+            'id' => $id, 'name' => rv_clean((string)($t['name'] ?? ''), 12) ?: $id,
+            'seats' => max(1, min(40, (int)($t['seats'] ?? 4))),
+            'area' => in_array($t['area'] ?? '', $areaIds, true) ? $t['area'] : $areaIds[0],
+            'x' => max(0, min(100 - $w, (int)($t['x'] ?? 0))), 'y' => max(0, min(60 - $h, (int)($t['y'] ?? 0))),
+            'w' => $w, 'h' => $h, 'shape' => ($t['shape'] ?? '') === 'round' ? 'round' : 'rect',
+        ];
+    }
+    if (count($tables) > 120) out(400, ['ok' => false, 'message' => 'Zu viele Tische.']);
+    out(rv_write_json('resv-tables', ['example' => false, 'areas' => $areas, 'tables' => $tables]) ? 200 : 500, ['ok' => true, 'message' => 'Tischplan gespeichert.']);
 }
 
 if ($act === 'templates') {

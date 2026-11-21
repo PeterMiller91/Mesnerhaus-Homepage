@@ -4,7 +4,8 @@
   var root = document.getElementById('app');
   var boot = JSON.parse(root.getAttribute('data-boot'));
   var isAdmin = boot.user.role === 'admin';
-  var S = { date: boot.today, data: null, menu: false };
+  var S = { date: boot.today, data: null, menu: false, view: 'liste', planTime: null, area: null, assign: null, edit: null, sel: null };
+  try { if (localStorage.getItem('mh-view') === 'plan') S.view = 'plan'; } catch { /* egal */ }
 
   /* ── Helfer ─────────────────────────────────────────────── */
   function esc(v) {
@@ -98,6 +99,10 @@
       '<div class="kpi"><small>Online-Buchung</small><div class="toggle"><span class="dot' + (d.online_enabled ? '' : ' off') + '"></span>' + (d.online_enabled ? 'aktiv' : 'pausiert') + '</div></div>' +
       '</section>';
 
+    html += '<div class="viewswitch" role="tablist" aria-label="Ansicht">' +
+      '<button role="tab" data-view="liste" aria-selected="' + (S.view !== 'plan') + '">Liste</button>' +
+      '<button role="tab" data-view="plan" aria-selected="' + (S.view === 'plan') + '">Tischplan</button></div>';
+    if (S.view === 'plan') { html += planHtml(d); } else {
     html += '<div class="cols"><section class="panel"><h2>Ablauf <span class="count">' + d.items.length + ' Einträge</span></h2>' +
       '<p class="print-title">Reservierungen ' + esc(d.label) + ' · ' + d.stats.guests + ' Gäste</p>';
     if (!d.open) html += '<p class="closed-note">An diesem Tag ist regulär geschlossen. Feiern und Gruppen kannst du trotzdem eintragen.</p>';
@@ -105,7 +110,7 @@
     html += d.items.map(function (r) {
       var inactive = !(r.status === 'bestaetigt' || r.status === 'erschienen');
       var meta = [SOURCE[r.source] || r.source];
-      if (r.table) meta.push('Tisch ' + r.table);
+      if (r.table) meta.push(/^tisch/i.test(r.table) ? r.table : 'Tisch ' + r.table);
       if (r.note) meta.push(r.note);
       if (r.phone) meta.push(r.phone);
       return '<div class="row' + (inactive ? ' inactive' : '') + '">' +
@@ -121,10 +126,12 @@
         return '<div class="bar"><span>' + esc(l.time) + '</span><div class="track"><div class="fill' + (l.pct >= 85 ? ' hi' : '') + '" style="width:' + l.pct + '%"></div></div><span>' + l.guests + '/' + d.seats + '</span></div>';
       }).join('') + '</div><p class="hint" style="margin-top:10px">Gäste am Tisch, eine Reservierung belegt ' + d.duration + ' Minuten.</p>' : '<p class="empty">–</p>') +
       '</aside></div>';
+    }
     html += '</main><button class="btn primary fab" data-act="new" aria-label="Reservierung eintragen">' + ico('plus') + 'Eintragen</button>';
     root.innerHTML = html;
 
     $('#pick').addEventListener('change', function (e) { if (e.target.value) load(e.target.value); });
+    if (S.view === 'plan') bindPlan();
   }
 
   /* ── Bearbeiten / Eintragen ─────────────────────────────── */
@@ -140,11 +147,12 @@
   }
   function showErr(dlg, msg) { var e = $('[data-err]', dlg); e.textContent = msg; e.hidden = false; }
 
-  function openEdit(id) {
+  function openEdit(id, preset) {
     var r = id ? S.data.items.filter(function (x) { return x.id === id; })[0] : null;
     if (id && !r) return;
     if (r && !r.seen) api('POST', { action: 'seen', ids: [r.id] }).then(function () { r.seen = true; S.data.unseen = S.data.unseen.filter(function (u) { return u.id !== r.id; }); render(); });
-    var v = r || { date: S.date, time: (S.data.slots[2] || S.data.slots[0] || '12:00'), persons: 2, name: '', phone: '', email: '', note: '', table: '', source: 'telefon', status: 'bestaetigt' };
+    var v = r || Object.assign({ date: S.date, time: (S.data.slots[2] || S.data.slots[0] || '12:00'), persons: 2, name: '', phone: '', email: '', note: '', table: '', tables: [], source: 'telefon', status: 'bestaetigt' }, preset || {});
+    var sel = (v.tables || []).slice();
     var timeOpts = S.data.slots.slice(); if (timeOpts.indexOf(v.time) < 0) timeOpts.push(v.time); timeOpts.sort();
     var opt = function (map, cur) { return Object.keys(map).map(function (k) { return '<option value="' + k + '"' + (k === cur ? ' selected' : '') + '>' + map[k] + '</option>'; }).join(''); };
     var quick = '';
@@ -167,8 +175,8 @@
       '<label>E-Mail *<input name="email" type="email" maxlength="120" value="' + esc(v.email) + '" autocomplete="off"></label></div>' +
       '<p class="hint" style="margin-top:-6px">* Pflicht bei neuen Reservierungen. Ausnahme: Quelle „Vor Ort“.</p>' +
       '<label>Notiz / Wunsch<textarea name="note" maxlength="300">' + esc(v.note) + '</textarea></label>' +
-      '<div class="grid3"><label>Tisch<input name="table" maxlength="30" value="' + esc(v.table) + '"></label>' +
-      '<label>Quelle<select name="source"' + (r && r.source === 'online' ? ' disabled' : '') + '>' + opt(SOURCE, v.source) + '</select></label>' +
+      '<div class="tblfield"><span class="lbl">Tisch' + (v.table && !(v.tables || []).length ? ' <span class="muted">(bisher: ' + esc(v.table) + ')</span>' : '') + '</span><div class="tblpick" data-tblpick></div></div>' +
+      '<div class="grid2"><label>Quelle<select name="source"' + (r && r.source === 'online' ? ' disabled' : '') + '>' + opt(SOURCE, v.source) + '</select></label>' +
       '<label>Status<select name="status">' + opt(STATUS, v.status) + '</select></label></div>' +
       (!r ? '<label class="check"><input type="checkbox" name="send_mail"> Bestätigung per E-Mail an den Gast senden</label>' : '');
     var foot = (r && r.status === 'bestaetigt' && r.email ? '<label class="check" style="font-size:13px;margin-right:8px"><input type="checkbox" data-notify checked> Gast per E-Mail informieren</label>' : '') +
@@ -183,6 +191,29 @@
       api('POST', { action: 'status', id: r.id, status: 'storniert', notify: notify }).then(function (j) { dlg.close(); toast(j.mailed ? 'Storniert, Gast informiert' : 'Storniert'); load(); });
     });
     var form = $('form', dlg);
+    var drawPick = function () {
+      var t = form.time.value || v.time, dt = form.date.value || v.date;
+      var taken = tablesTaken(dt, t, r ? r.id : 0);
+      var plan = S.data.plan;
+      $('[data-tblpick]', dlg).innerHTML = plan.areas.map(function (a) {
+        var ts = plan.tables.filter(function (x) { return x.area === a.id; });
+        if (!ts.length) return '';
+        return '<div class="tblarea"><small>' + esc(a.name) + '</small>' + ts.map(function (x) {
+          var on = sel.indexOf(x.id) >= 0, busy = taken[x.id];
+          return '<button type="button" data-pick="' + esc(x.id) + '" aria-pressed="' + on + '" class="pk' + (on ? ' on' : '') + (busy && !on ? ' busy' : '') + '"' +
+            (busy ? ' title="belegt: ' + esc(busy) + '"' : '') + '>' + esc(x.name) + ' <span>' + x.seats + '</span></button>';
+        }).join('') + '</div>';
+      }).join('') + '<p class="hint" style="margin:4px 0 0">Mehrere Tische antippen für Gruppen. Grau = zu dieser Zeit schon belegt.</p>';
+      $$('[data-pick]', dlg).forEach(function (b) {
+        b.addEventListener('click', function () {
+          var id2 = b.dataset.pick, i = sel.indexOf(id2);
+          if (i >= 0) sel.splice(i, 1); else sel.push(id2);
+          drawPick();
+        });
+      });
+    };
+    drawPick();
+    form.time.addEventListener('change', drawPick); form.date.addEventListener('change', drawPick);
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       var f = new FormData(form), data = { action: 'save' };
@@ -193,6 +224,7 @@
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(String(data.email || '').trim())) { showErr(dlg, 'Bitte eine gültige E-Mail-Adresse eintragen.'); form.email.focus(); return; }
       }
       data.send_mail = !!form.send_mail && form.send_mail.checked;
+      data.tables = sel;
       if (r) { data.id = r.id; data.source = r.source; }
       var send = function (force) {
         data.force = force;
@@ -386,6 +418,245 @@
     });
   }
 
+  /* ── Tischplan ──────────────────────────────────────────── */
+  function minutes(t) { var p = String(t).split(':'); return (+p[0]) * 60 + (+p[1]); }
+  function isActive(r) { return r.status === 'bestaetigt' || r.status === 'erschienen'; }
+  function overlaps(r, t, dur) { var a = minutes(r.time), m = minutes(t); return m >= a && m < a + dur; }
+  // Welche Tische sind zu dieser Zeit (für die Dauer einer neuen Reservierung) belegt? → { id: Name }
+  function tablesTaken(date, time, exceptId) {
+    var out = {}, dur = S.data.duration, a = minutes(time);
+    if (date !== S.data.date) return out;
+    S.data.items.forEach(function (r) {
+      if (!isActive(r) || r.id === exceptId) return;
+      var b = minutes(r.time);
+      if (b >= a + dur || b + dur <= a) return;
+      (r.tables || []).forEach(function (id) { out[id] = r.name; });
+    });
+    return out;
+  }
+  function planTimes(d) { return d.slots.length ? d.slots : d.load.map(function (l) { return l.time; }); }
+  function defaultTime(d) {
+    var times = planTimes(d);
+    if (!times.length) return '12:00';
+    if (d.date === boot.today) {
+      var now = new Date(), m = now.getHours() * 60 + now.getMinutes(), best = times[0];
+      times.forEach(function (t) { if (minutes(t) <= m) best = t; });
+      return best;
+    }
+    var busy = d.load.slice().sort(function (x, y) { return y.guests - x.guests; })[0];
+    return busy && busy.guests ? busy.time : times[0];
+  }
+
+  function planHtml(d) {
+    var plan = S.edit || d.plan, editing = !!S.edit;
+    if (!S.area || !plan.areas.some(function (a) { return a.id === S.area; })) {
+      var withTables = plan.areas.filter(function (a) { return plan.tables.some(function (t) { return t.area === a.id; }); })[0];
+      S.area = (withTables || plan.areas[0]).id;
+    }
+    var times = planTimes(d);
+    if (!S.planTime || times.indexOf(S.planTime) < 0) S.planTime = defaultTime(d);
+    var T = S.planTime, dur = d.duration;
+    var occ = {}, clash = {};
+    d.items.forEach(function (r) {
+      if (!isActive(r) || !overlaps(r, T, dur)) return;
+      (r.tables || []).forEach(function (id) { if (occ[id]) clash[id] = true; else occ[id] = r; });
+    });
+    var assigning = S.assign ? d.items.filter(function (r) { return r.id === S.assign; })[0] : null;
+    var unassigned = d.items.filter(function (r) { return isActive(r) && !(r.tables || []).length; });
+
+    var h = '<section class="panel plan-panel">';
+    h += '<div class="plan-head"><h2>Tischplan</h2>';
+    if (plan.areas.length > 1) h += '<div class="seg">' + plan.areas.map(function (a) {
+      return '<button data-area="' + esc(a.id) + '" aria-pressed="' + (a.id === S.area) + '">' + esc(a.name) + '</button>';
+    }).join('') + '</div>';
+    h += '<span style="flex:1"></span>';
+    if (editing) {
+      h += '<button class="btn small ghost" data-act="addtable">' + ico('plus') + 'Tisch</button>' +
+        '<button class="btn small ghost" data-act="cancelplan">Abbrechen</button><button class="btn small primary" data-act="saveplan">Plan speichern</button>';
+    } else {
+      h += '<button class="btn small ghost" data-act="autoassign">Automatisch zuweisen</button>' +
+        (isAdmin ? '<button class="btn small ghost" data-act="editplan">' + ico('edit') + 'Bearbeiten</button>' : '');
+    }
+    h += '</div>';
+
+    if (plan.example && !editing) h += '<p class="closed-note">Das ist ein <b>Beispiel-Tischplan</b>. ' + (isAdmin ? 'Unter „Bearbeiten“ passt du ihn an eure Gaststube an.' : 'Die Inhaberin kann ihn an die Gaststube anpassen.') + '</p>';
+
+    if (!editing) {
+      h += '<div class="times" role="group" aria-label="Uhrzeit">' + times.map(function (t) {
+        return '<button data-ptime="' + esc(t) + '" aria-pressed="' + (t === T) + '">' + esc(t) + '</button>';
+      }).join('') + '</div>';
+      if (assigning) {
+        h += '<div class="assignbar" role="status"><span>Tische für <b>' + esc(assigning.name) + '</b> (' + assigning.persons + ' P., ' + esc(assigning.time) + ' Uhr) antippen' +
+          ((assigning.tables || []).length ? ' · gewählt: ' + esc(assigning.table) : '') + '</span><button class="btn small primary" data-act="assigndone">Fertig</button></div>';
+      }
+    } else {
+      var seatsArea = plan.tables.filter(function (t) { return t.area === S.area; }).reduce(function (n, t) { return n + (+t.seats); }, 0);
+      var seatsAll = plan.tables.reduce(function (n, t) { return n + (+t.seats); }, 0);
+      h += '<p class="hint">Tische ziehen zum Verschieben, antippen zum Bearbeiten. Plätze hier: <b>' + seatsArea + '</b>, gesamt: <b>' + seatsAll + '</b>' +
+        (seatsAll !== d.seats ? ' <span style="color:var(--warn)">(Einstellungen: ' + d.seats + ' Plätze)</span>' : '') + '</p>';
+    }
+
+    h += '<div class="plan-layout' + (editing && S.sel ? ' with-side' : '') + '"><div class="plan-wrap"><div class="plan' + (editing ? ' editing' : '') + (assigning ? ' assigning' : '') + '" data-plan>';
+    plan.tables.filter(function (t) { return t.area === S.area; }).forEach(function (t) {
+      var r = occ[t.id], cls = 'tbl ' + (t.shape === 'round' ? 'round' : 'rect');
+      var mine = assigning && (assigning.tables || []).indexOf(t.id) >= 0;
+      if (editing) cls += S.sel === t.id ? ' sel' : '';
+      else if (mine) cls += ' mine';
+      else if (r) cls += r.status === 'erschienen' ? ' here' : ' busy';
+      if (!editing && clash[t.id]) cls += ' clash';
+      var style = 'left:' + t.x + '%;top:' + (t.y / 60 * 100) + '%;width:' + t.w + '%;height:' + (t.h / 60 * 100) + '%';
+      var inner = '<b>' + esc(t.name) + '</b>' + (r && !editing && !mine ? '<span class="g">' + esc(r.name) + '</span><span class="s">' + r.persons + ' P. · ' + esc(r.time) + '</span>' : '<span class="s">' + t.seats + ' Pl.</span>');
+      var label = 'Tisch ' + t.name + ', ' + t.seats + ' Plätze' + (r ? ', belegt von ' + r.name + ' ab ' + r.time : ', frei');
+      h += editing
+        ? '<div class="' + cls + '" style="' + style + '" data-etbl="' + esc(t.id) + '" role="button" tabindex="0" aria-label="' + esc(label) + '">' + inner + '</div>'
+        : '<button class="' + cls + '" style="' + style + '" data-tbl="' + esc(t.id) + '" aria-label="' + esc(label) + '">' + inner + '</button>';
+    });
+    h += '</div></div>';
+
+    if (editing && S.sel) {
+      var st = plan.tables.filter(function (t) { return t.id === S.sel; })[0];
+      if (st) {
+        h += '<aside class="plan-side form"><h3>Tisch ' + esc(st.name) + '</h3>' +
+          '<div class="grid2"><label>Nummer/Name<input data-tf="name" maxlength="12" value="' + esc(st.name) + '"></label>' +
+          '<label>Plätze<input data-tf="seats" type="number" min="1" max="40" value="' + st.seats + '"></label></div>' +
+          '<div class="grid2"><label>Form<select data-tf="shape"><option value="rect"' + (st.shape !== 'round' ? ' selected' : '') + '>eckig</option><option value="round"' + (st.shape === 'round' ? ' selected' : '') + '>rund</option></select></label>' +
+          '<label>Bereich<select data-tf="area">' + plan.areas.map(function (a) { return '<option value="' + esc(a.id) + '"' + (a.id === st.area ? ' selected' : '') + '>' + esc(a.name) + '</option>'; }).join('') + '</select></label></div>' +
+          '<div class="grid2"><label>Breite<input data-tf="w" type="number" min="4" max="60" value="' + st.w + '"></label>' +
+          '<label>Höhe<input data-tf="h" type="number" min="4" max="40" value="' + st.h + '"></label></div>' +
+          '<button class="btn small danger" data-act="deltable">Tisch löschen</button></aside>';
+      }
+    }
+    h += '</div>';
+
+    if (!editing) {
+      h += '<div class="plan-foot"><div class="legend"><span><i class="lg free"></i>frei</span><span><i class="lg busy"></i>reserviert</span><span><i class="lg here"></i>Gäste da</span><span><i class="lg clash"></i>doppelt belegt</span></div>';
+      if (unassigned.length) {
+        h += '<div class="unassigned"><b>Ohne Tisch (' + unassigned.length + '):</b> ' + unassigned.map(function (r) {
+          return '<button class="ua' + (overlaps(r, T, dur) ? ' now' : '') + (S.assign === r.id ? ' on' : '') + '" data-assign="' + r.id + '">' + esc(r.time) + ' ' + esc(r.name) + ' · ' + r.persons + ' P.</button>';
+        }).join('') + '<p class="hint" style="margin:6px 0 0">Antippen, dann die passenden Tische im Plan wählen.</p></div>';
+      } else if (d.items.some(isActive)) h += '<p class="hint">Alle Reservierungen dieses Tages haben einen Tisch.</p>';
+      h += '</div>';
+    }
+    return h + '</section>';
+  }
+
+  function bindPlan() {
+    if (!S.edit) return;
+    var box = $('[data-plan]');
+    if (!box) return;
+    $$('[data-etbl]', box).forEach(function (el) {
+      el.addEventListener('pointerdown', function (e) {
+        e.preventDefault();
+        var t = S.edit.tables.filter(function (x) { return x.id === el.dataset.etbl; })[0];
+        var rect = box.getBoundingClientRect(), sx = e.clientX, sy = e.clientY, ox = t.x, oy = t.y, moved = false;
+        el.setPointerCapture(e.pointerId);
+        var move = function (ev) {
+          var dx = Math.round((ev.clientX - sx) / rect.width * 100), dy = Math.round((ev.clientY - sy) / rect.height * 60);
+          if (dx || dy) moved = true;
+          t.x = Math.max(0, Math.min(100 - t.w, ox + dx)); t.y = Math.max(0, Math.min(60 - t.h, oy + dy));
+          el.style.left = t.x + '%'; el.style.top = (t.y / 60 * 100) + '%';
+        };
+        var up = function () {
+          el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up);
+          if (!moved || S.sel !== t.id) { S.sel = t.id; render(); }
+        };
+        el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
+      });
+      el.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); S.sel = el.dataset.etbl; render(); } });
+    });
+    $$('[data-tf]').forEach(function (inp) {
+      inp.addEventListener('change', function () {
+        var t = S.edit.tables.filter(function (x) { return x.id === S.sel; })[0], k = inp.dataset.tf;
+        if (!t) return;
+        if (k === 'seats' || k === 'w' || k === 'h') t[k] = Math.max(1, parseInt(inp.value, 10) || 1); else t[k] = inp.value;
+        t.w = Math.min(60, Math.max(4, t.w)); t.h = Math.min(40, Math.max(4, t.h));
+        t.x = Math.min(t.x, 100 - t.w); t.y = Math.min(t.y, 60 - t.h);
+        if (k === 'area') S.area = t.area;
+        render();
+      });
+    });
+  }
+
+  function openTableDialog(tid) {
+    var d = S.data, t = d.plan.tables.filter(function (x) { return x.id === tid; })[0];
+    if (!t) return;
+    var taken = tablesTaken(d.date, S.planTime, 0);
+    var cand = d.items.filter(function (r) { return isActive(r) && !(r.tables || []).length; });
+    var body = '<p class="hint">' + t.seats + ' Plätze · ' + esc(S.planTime) + ' Uhr</p>' +
+      (cand.length ? '<p style="margin:8px 0 6px;font-weight:700">Reservierung zuweisen</p><div class="cand">' + cand.map(function (r) {
+        return '<button type="button" class="btn small ghost" data-cand="' + r.id + '">' + esc(r.time) + ' · ' + esc(r.name) + ' · ' + r.persons + ' P.</button>';
+      }).join('') + '</div>' : '<p class="hint">Alle Reservierungen dieses Tages haben schon einen Tisch.</p>') +
+      (taken[tid] ? '<p class="alert err">Zu dieser Zeit (für die nächsten ' + d.duration + ' Min.) teilweise belegt von ' + esc(taken[tid]) + '.</p>' : '');
+    var dlg = dialog('Tisch ' + t.name, body, '<button type="button" class="btn ghost" data-close2>Schließen</button><button type="button" class="btn primary" data-newhere>' + ico('plus') + 'Neue Reservierung hier</button>');
+    $('[data-close2]', dlg).addEventListener('click', function () { dlg.close(); });
+    $('[data-newhere]', dlg).addEventListener('click', function () { dlg.close(); openEdit(0, { time: S.planTime, tables: [tid] }); });
+    $$('[data-cand]', dlg).forEach(function (b) {
+      b.addEventListener('click', function () {
+        var r = d.items.filter(function (x) { return x.id === +b.dataset.cand; })[0];
+        api('POST', { action: 'assign', id: r.id, tables: [tid] }).then(function (j) {
+          if (!j.ok) { showErr(dlg, j.message || 'Zuweisen fehlgeschlagen.'); return; }
+          dlg.close(); toast('Tisch ' + t.name + ': ' + r.name); load();
+        });
+      });
+    });
+  }
+
+  function toggleAssign(tid) {
+    var r = S.data.items.filter(function (x) { return x.id === S.assign; })[0];
+    if (!r) { S.assign = null; render(); return; }
+    var tables = (r.tables || []).slice(), i = tables.indexOf(tid);
+    if (i >= 0) tables.splice(i, 1); else tables.push(tid);
+    api('POST', { action: 'assign', id: r.id, tables: tables }).then(function (j) {
+      if (!j.ok) { toast(j.message || 'Geht nicht'); return; }
+      load();
+    });
+  }
+
+  function planClick(t, act) {
+    if (t.dataset.view) {
+      S.view = t.dataset.view; S.assign = null;
+      try { localStorage.setItem('mh-view', S.view); } catch { /* egal */ }
+      render(); return true;
+    }
+    if (t.dataset.ptime) { S.planTime = t.dataset.ptime; render(); return true; }
+    if (t.dataset.area) { S.area = t.dataset.area; S.sel = null; render(); return true; }
+    if (t.dataset.assign) { var a = +t.dataset.assign; S.assign = S.assign === a ? null : a; render(); return true; }
+    if (t.dataset.tbl) {
+      var tid = t.dataset.tbl;
+      if (S.assign) { toggleAssign(tid); return true; }
+      var r = S.data.items.filter(function (x) { return isActive(x) && overlaps(x, S.planTime, S.data.duration) && (x.tables || []).indexOf(tid) >= 0; })[0];
+      if (r) openEdit(r.id); else openTableDialog(tid);
+      return true;
+    }
+    if (act === 'assigndone') { S.assign = null; render(); return true; }
+    if (act === 'autoassign') {
+      api('POST', { action: 'auto_assign', date: S.date }).then(function (j) { toast(j.message || 'Fertig'); load(); });
+      return true;
+    }
+    if (act === 'editplan') { S.edit = JSON.parse(JSON.stringify(S.data.plan)); S.sel = null; S.assign = null; render(); return true; }
+    if (act === 'cancelplan') { S.edit = null; S.sel = null; render(); return true; }
+    if (act === 'addtable') {
+      var n = 1, ids = S.edit.tables.map(function (x) { return x.id; });
+      while (ids.indexOf('t' + n) >= 0) n++;
+      var nums = S.edit.tables.map(function (x) { return parseInt(x.name, 10) || 0; });
+      var name = String(Math.max.apply(null, nums.concat([0])) + 1);
+      S.edit.tables.push({ id: 't' + n, name: name, seats: 4, area: S.area, x: 2, y: 2, w: 12, h: 10, shape: 'rect' });
+      S.sel = 't' + n; render(); return true;
+    }
+    if (act === 'deltable') {
+      if (!t.dataset.sure) { t.dataset.sure = '1'; t.textContent = 'Wirklich löschen?'; return true; }
+      S.edit.tables = S.edit.tables.filter(function (x) { return x.id !== S.sel; }); S.sel = null; render(); return true;
+    }
+    if (act === 'saveplan') {
+      api('POST', { action: 'plan_save', plan: S.edit }).then(function (j) {
+        if (!j.ok) { toast(j.message || 'Speichern fehlgeschlagen'); return; }
+        S.edit = null; S.sel = null; toast('Tischplan gespeichert'); load();
+      });
+      return true;
+    }
+    return false;
+  }
+
   /* ── Klicks ─────────────────────────────────────────────── */
   root.addEventListener('click', function (e) {
     var t = e.target.closest('button,[data-day]');
@@ -397,6 +668,7 @@
       go.then(function () { openEdit(oid); });
       return;
     }
+    if (planClick(t, act)) return;
     if (t.dataset.here) { api('POST', { action: 'status', id: parseInt(t.dataset.here, 10), status: 'erschienen' }).then(function () { load(); }); return; }
     if (t.dataset.day && !act) { load(t.dataset.day); return; }
     if (act !== 'menu' && S.menu) S.menu = false;
@@ -415,8 +687,8 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && S.menu) { S.menu = false; render(); } });
 
   // Alle 60 Sekunden aktualisieren, solange die App sichtbar ist und kein Dialog offen ist
-  setInterval(function () { if (!document.hidden && !document.querySelector('dialog[open]') && !S.menu) load(); }, 60000);
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && !document.querySelector('dialog[open]')) load(); });
+  setInterval(function () { if (!document.hidden && !document.querySelector('dialog[open]') && !S.menu && !S.edit) load(); }, 60000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && !document.querySelector('dialog[open]') && !S.edit) load(); });
 
   load().catch(function () { root.innerHTML = '<p class="loading">Verbindung fehlgeschlagen. Bitte neu laden.</p>'; });
 })();

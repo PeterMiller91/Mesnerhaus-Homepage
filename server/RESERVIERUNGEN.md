@@ -64,6 +64,26 @@ Online zählt „davon online“, beim Eintragen in der App „Plätze gesamt“
 - Online-Buchung: Spamschutz (unsichtbares Feld, Mindestzeit), höchstens 5 Buchungen je Anschluss und Stunde.
 - Admin-Seiten: Login-Pflicht, CSRF-Schutz, strenge Content-Security-Policy, nicht in Suchmaschinen.
 
+## Tischplan
+
+In der Verwaltung oben **„Liste“ | „Tischplan“** umschalten. Die Wahl merkt sich jedes Gerät.
+
+- **Uhrzeit wählen** (Leiste über dem Plan): Jeder Tisch zeigt, ob er zu dieser Zeit frei (weiß), reserviert (grün),
+  mit Gästen besetzt (blau, nach „Da“) oder doppelt belegt (rot umrandet) ist.
+- **Belegten Tisch antippen** → die Reservierung öffnet sich.
+- **Freien Tisch antippen** → eine Reservierung ohne Tisch zuweisen oder „Neue Reservierung hier“.
+- **Zuweisen per Liste:** Unter dem Plan stehen alle Reservierungen „Ohne Tisch“. Eine antippen, dann einen oder
+  mehrere Tische im Plan antippen (zusammengestellte Tische für Gruppen), „Fertig“.
+- **Automatisch zuweisen:** verteilt alle offenen Reservierungen des Tages auf den kleinsten passenden freien Tisch,
+  notfalls auf zwei Tische im selben Bereich.
+- Im Bearbeiten-Dialog einer Reservierung gibt es ebenfalls die Tischauswahl. Zu dieser Zeit belegte Tische sind grau.
+- **Doppelbelegungen** (gleicher Tisch, überlappende Zeit) lehnt der Server ab.
+
+**Plan bearbeiten (nur Admin):** „Bearbeiten“ → Tische ziehen, antippen für Nummer, Plätze, Form (eckig/rund),
+Größe und Bereich (Gaststube/Terrasse), „+ Tisch“, „Tisch löschen“, „Plan speichern“. Die Summe der Plätze wird mit
+den Einstellungen verglichen. Anfangs ist ein **Beispielplan** (11 Tische, 54 Plätze) hinterlegt.
+Gespeichert in `resv-tables.php`.
+
 ## E-Mail-Vorlagen
 
 Verwaltung → Menü (☰) → **E-Mail-Vorlagen** (nur Admin). Bearbeitbar sind Betreff und Text von:
