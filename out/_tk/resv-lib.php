@@ -187,7 +187,7 @@ function rv_mail_owner(array $r, string $what): bool {
         . $r['persons'] . " Personen · " . $r['name'] . "\n"
         . "Telefon: " . ($r['phone'] ?: '–') . "\nE-Mail: " . ($r['email'] ?: '–') . "\n"
         . ($r['note'] !== '' ? "Wunsch: " . $r['note'] . "\n" : '')
-        . "\nZur Übersicht: " . rv_site_url() . "/reservierungen/\n";
+        . "\nZur Übersicht: " . rv_site_url() . "/reservierungen/verwaltung/\n";
     return rv_mail($to, $what . ': ' . date('d.m.', strtotime($r['date'])) . ' ' . $r['time'] . ', ' . $r['persons'] . ' P., ' . $r['name'], $body, (string)$r['email']);
 }
 
@@ -198,7 +198,7 @@ function rv_save_users(array $u): bool { return rv_write_json('resv-users', ['us
 function rv_session_start(): void {
     if (session_status() === PHP_SESSION_ACTIVE) return;
     session_name('mh_resv');
-    session_set_cookie_params(['lifetime' => 0, 'path' => '/reservierungen/', 'secure' => !empty($_SERVER['HTTPS']), 'httponly' => true, 'samesite' => 'Strict']);
+    session_set_cookie_params(['lifetime' => 0, 'path' => '/reservierungen/verwaltung/', 'secure' => !empty($_SERVER['HTTPS']), 'httponly' => true, 'samesite' => 'Strict']);
     session_start();
     if (empty($_SESSION['csrf'])) $_SESSION['csrf'] = bin2hex(random_bytes(16));
     // nach 14 Tagen ohne Nutzung neu anmelden

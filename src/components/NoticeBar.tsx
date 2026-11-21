@@ -8,7 +8,7 @@ type Notice = { active: boolean; text: string; link: string; url?: string; label
 
 const LINKS: Record<string, { href: string; label: string }> = {
   "#menu": { href: "/#menu", label: "Zur Tageskarte" },
-  "#hours": { href: "/#hours", label: "Tisch anfragen" },
+  "#hours": { href: "/reservierungen/", label: "Tisch reservieren" },
   "#location": { href: "/#location", label: "Anfahrt" },
   tel: { href: TEL_HREF, label: "Anrufen" },
 };

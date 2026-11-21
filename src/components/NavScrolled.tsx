@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TEL_HREF } from "@/data/site";
 import Image from "next/image";
 import MobileMenu from "./MobileMenu";
 import NoticeBar from "./NoticeBar";
@@ -65,7 +64,7 @@ export default function NavScrolled() {
             </a>
           ))}
           <a
-            href={TEL_HREF}
+            href="/reservierungen/"
             className={`px-4 py-2 rounded-full font-bold text-sm transition-all duration-300 ${
               scrolled
                 ? "bg-[var(--color-brand)] text-white hover:bg-[var(--color-brand-dark)]"

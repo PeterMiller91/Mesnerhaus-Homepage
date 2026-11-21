@@ -6,22 +6,32 @@ Läuft komplett auf dem eigenen Webserver (PHP), ohne Datenbank-Server und ohne 
 ## Einrichtung (einmalig, ca. 3 Minuten)
 
 1. In Plesk bei der Domain unter **Git** auf „Pull“ klicken.
-2. `https://mesnerhausarmesberg.de/reservierungen/` öffnen.
+2. `https://mesnerhausarmesberg.de/reservierungen/verwaltung/` öffnen.
 3. Die Seite „Reservierungen einrichten“ fragt nach dem **Schlüssel aus dem Tageskarten-Link** (`upload_key`)
    und legt zwei Zugänge an:
    - **dein Zugang** (Admin: darf alles, auch Einstellungen)
    - **Theke/Empfang** (darf Reservierungen ansehen, eintragen, ändern)
    Passwörter: mindestens 10 Zeichen.
-4. Fertig. Auf dem Handy über „Zum Startbildschirm hinzufügen“ wie eine App ablegen.
+4. Fertig. Künftig meldest du dich unten auf der Gästeseite `/reservierungen/` im Feld
+   **„Anmeldung für das Mesnerhaus-Team“** an und landest direkt in der Verwaltung.
+   Auf dem Handy die Verwaltung über „Zum Startbildschirm hinzufügen“ wie eine App ablegen.
+
+## Adressen
+
+| Adresse | Für wen |
+|---|---|
+| `/reservierungen/` | Gäste: Online-Buchung. Unten das Team-Login. Alle Reservieren-Buttons der Startseite führen hierher. |
+| `/reservierungen/verwaltung/` | Team: Verwaltung (ohne Anmeldung geht es zurück zum Login auf der Gästeseite) |
+| `/reservierung-stornieren.php?t=…` | Gäste: Storno-Link aus der Bestätigungsmail |
 
 ## So funktioniert es
 
-**Gäste (Website, Bereich „Tisch reservieren“)**
+**Gäste (`/reservierungen/`)**
 - wählen Personen (1–8), einen Öffnungstag und eine freie Uhrzeit. Volle Zeiten sind durchgestrichen.
 - Ist Platz frei, ist die Reservierung **sofort bestätigt**. Der Gast bekommt eine E-Mail mit Storno-Link.
 - Ab 9 Personen: Hinweis auf Telefon/WhatsApp.
 
-**Verwaltung (`/reservierungen/`)**
+**Verwaltung (`/reservierungen/verwaltung/`)**
 - Tagesansicht mit Kennzahlen, Ablauf nach Uhrzeit und Belegung je halbe Stunde.
 - Neue Online-Reservierungen erscheinen oben als Hinweis, bis man sie öffnet oder „Alle gesehen“ tippt.
 - **Eintragen** für Telefon, WhatsApp, E-Mail oder Gäste vor Ort. Bei Überbuchung kommt eine Warnung, „Trotzdem eintragen“ ist möglich.
@@ -67,6 +77,7 @@ Kommen E-Mails nicht an oder landen im Spam: in Plesk unter „Mail“ prüfen, 
 |---|---|
 | `public/api/reservierung.php` | Schnittstelle für die Website (freie Tage/Zeiten, Buchen) |
 | `public/reservierung-stornieren.php` | Storno-Seite für Gäste (Link aus der Bestätigungsmail) |
-| `public/reservierungen/` | Verwaltungs-App (index.php, api.php, app.js, app.css) |
+| `src/app/reservierungen/page.tsx` | Gästeseite mit Buchung und Team-Login (`TeamLogin`) |
+| `public/reservierungen/verwaltung/` | Verwaltungs-App (index.php, api.php, app.js, app.css) |
 | `public/_tk/resv-lib.php` | Gemeinsame Logik (Speicher, Platzberechnung, Logins, E-Mails) |
 | `src/components/OnlineBooking.tsx` | Buchungsformular auf der Website (Rückfall: altes WhatsApp/E-Mail-Formular) |

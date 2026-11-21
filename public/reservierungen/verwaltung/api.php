@@ -2,7 +2,7 @@
 /* JSON-Schnittstelle der Reservierungs-App (nur angemeldet). */
 declare(strict_types=1);
 
-require dirname(__DIR__) . '/_tk/resv-lib.php';
+require dirname(__DIR__, 2) . '/_tk/resv-lib.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');

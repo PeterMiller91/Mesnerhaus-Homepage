@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TEL_HREF } from "@/data/site";
+import { TEL_DISPLAY, TEL_HREF } from "@/data/site";
 import Image from "next/image";
 
 const links = [
@@ -90,14 +90,21 @@ export default function MobileMenu({ scrolled = false }: { scrolled?: boolean })
 
         <div className="px-6 pb-10 pt-4">
           <a
-            href={TEL_HREF}
+            href="/reservierungen/"
             className="flex items-center justify-center gap-2 w-full py-4 bg-[var(--color-brand)] text-white font-bold rounded-full text-sm tracking-wide hover:bg-[var(--color-brand-dark)] transition-colors"
             onClick={() => setOpen(false)}
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.8 19.79 19.79 0 01.5 1.21 2 2 0 012.49-.01h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.91a16 16 0 006.09 6.09l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z" />
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 10h18M8 3v4M16 3v4" />
             </svg>
             Jetzt reservieren
+          </a>
+          <a
+            href={TEL_HREF}
+            className="mt-3 flex items-center justify-center gap-2 w-full py-3.5 border-2 border-[var(--color-brand)] text-[var(--color-brand-dark)] font-bold rounded-full text-sm"
+            onClick={() => setOpen(false)}
+          >
+            Anrufen: {TEL_DISPLAY}
           </a>
         </div>
       </div>

@@ -2,7 +2,7 @@
 /* Reservierungs-App: Ersteinrichtung, Anmeldung und App-Seite. */
 declare(strict_types=1);
 
-require dirname(__DIR__) . '/_tk/resv-lib.php';
+require dirname(__DIR__, 2) . '/_tk/resv-lib.php';
 
 header('Content-Type: text/html; charset=utf-8');
 header('X-Robots-Tag: noindex, nofollow');
@@ -22,6 +22,15 @@ $users = rv_users();
 $action = (string)($_POST['do'] ?? '');
 $csrfOk = hash_equals((string)$_SESSION['csrf'], (string)($_POST['csrf'] ?? ''));
 
+/* Login kommt vom Formular auf /reservierungen/ (statische Seite ohne Sitzung):
+   statt Token wird geprüft, dass die Anfrage von derselben Domain stammt. */
+function same_origin(): bool {
+    $host = strtolower((string)($_SERVER['HTTP_HOST'] ?? ''));
+    $src  = (string)($_SERVER['HTTP_ORIGIN'] ?? $_SERVER['HTTP_REFERER'] ?? '');
+    return $host !== '' && strtolower((string)parse_url($src, PHP_URL_HOST)) . (parse_url($src, PHP_URL_PORT) ? ':' . parse_url($src, PHP_URL_PORT) : '') === $host;
+}
+function back_to_login(string $code): void { header('Location: ../?login=' . $code . '#team-login'); exit; }
+
 /* ── Ersteinrichtung ─────────────────────────────────────────── */
 if (!$users && $action === 'setup' && $csrfOk) {
     $key = (string)(tk_config()['upload_key'] ?? '');
@@ -39,8 +48,8 @@ if (!$users && $action === 'setup' && $csrfOk) {
 }
 
 /* ── Anmelden / Abmelden ─────────────────────────────────────── */
-if ($users && $action === 'login' && $csrfOk) {
-    if (rv_login_blocked()) $error = 'Zu viele Fehlversuche. Bitte in 15 Minuten erneut versuchen.';
+if ($users && $action === 'login' && ($csrfOk || same_origin())) {
+    if (rv_login_blocked()) back_to_login('gesperrt');
     else {
         $id = uid((string)($_POST['user'] ?? ''));
         $u = $users[$id] ?? null;
@@ -49,10 +58,10 @@ if ($users && $action === 'login' && $csrfOk) {
             session_regenerate_id(true); $_SESSION['user'] = $id; header('Location: ./'); exit;
         }
         rv_login_failed(); usleep(600000);
-        $error = 'Name oder Passwort stimmt nicht.';
+        back_to_login('fehler');
     }
 }
-if ($action === 'logout' && $csrfOk) { $_SESSION = []; session_destroy(); header('Location: ./'); exit; }
+if ($action === 'logout' && $csrfOk) { $_SESSION = []; session_destroy(); header('Location: ../?login=abgemeldet#team-login'); exit; }
 
 $me = $users ? rv_current_user() : null;
 
@@ -87,14 +96,7 @@ if (!$me) {
             <button class="btn primary" type="submit">Einrichten</button>
           </form></div></main>');
     } else {
-        shell('Anmelden – Reservierungen', '<main class="auth"><div class="card">
-          <div class="brand"><span class="logo" aria-hidden="true"></span><div><h1>Reservierungen</h1><p class="muted">Mesnerhaus am Armesberg</p></div></div>' . $err . '
-          <form method="post" class="form">
-            <input type="hidden" name="do" value="login"><input type="hidden" name="csrf" value="' . $csrf . '">
-            <label>Name<input name="user" required autocomplete="username" autocapitalize="none"></label>
-            <label>Passwort<input name="pass" type="password" required autocomplete="current-password"></label>
-            <button class="btn primary" type="submit">Anmelden</button>
-          </form></div></main>');
+        back_to_login('bitte');
     }
     exit;
 }

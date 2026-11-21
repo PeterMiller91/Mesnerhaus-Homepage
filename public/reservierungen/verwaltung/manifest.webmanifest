@@ -1,8 +1,8 @@
 {
   "name": "Mesnerhaus Reservierungen",
   "short_name": "Reservierungen",
-  "start_url": "/reservierungen/",
-  "scope": "/reservierungen/",
+  "start_url": "/reservierungen/verwaltung/",
+  "scope": "/reservierungen/verwaltung/",
   "display": "standalone",
   "background_color": "#FAFAF5",
   "theme_color": "#3D5C15",

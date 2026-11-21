@@ -24,10 +24,14 @@ export default function FloatingCTA() {
         className="w-12 h-12 rounded-full bg-[var(--color-brand-deeper)] text-white flex items-center justify-center shadow-xl">
         <Icon name="navigation" size={19} strokeWidth={2} />
       </a>
-      <a href={TEL_HREF}
+      <a href={TEL_HREF} aria-label="Anrufen"
+        className="w-12 h-12 rounded-full bg-white text-[var(--color-brand-dark)] border border-[var(--color-line)] flex items-center justify-center shadow-xl">
+        <Icon name="phone" size={18} strokeWidth={2} />
+      </a>
+      <a href="/reservierungen/"
         className="flex items-center gap-2 px-5 py-3.5 rounded-full bg-[var(--color-brand)] text-white font-bold text-sm shadow-xl"
         style={{ boxShadow: "0 8px 32px rgba(141,180,58,0.45)" }}>
-        <Icon name="phone" size={16} strokeWidth={2.2} />
+        <Icon name="calendar" size={16} strokeWidth={2.2} />
         Reservieren
       </a>
     </div>

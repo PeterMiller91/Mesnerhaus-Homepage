@@ -8,7 +8,6 @@ import Icon, { Stars, type IconName } from "@/components/Icon";
 import OpenStatus from "@/components/OpenStatus";
 import HoursTable from "@/components/HoursTable";
 import WeatherWidget from "@/components/WeatherWidget";
-import OnlineBooking from "@/components/OnlineBooking";
 import ReviewCarousel from "@/components/ReviewCarousel";
 import Tageskarte from "@/components/Tageskarte";
 import ConsentMap from "@/components/ConsentMap";
@@ -214,7 +213,7 @@ export default function Home() {
             <a href="#menu" className="px-9 py-4 rounded-full bg-white text-[var(--color-brand-dark)] font-bold text-sm tracking-wide hover:bg-[var(--color-brand-pale)] transition-all duration-300 shadow-xl hover:shadow-2xl hover:-translate-y-0.5 text-center">
               Zur Tageskarte
             </a>
-            <a href="#hours" className="px-9 py-4 rounded-full border-2 border-white/55 text-white font-bold text-sm tracking-wide hover:bg-white/15 hover:border-white/80 transition-all duration-300 text-center">
+            <a href="/reservierungen/" className="px-9 py-4 rounded-full border-2 border-white/55 text-white font-bold text-sm tracking-wide hover:bg-white/15 hover:border-white/80 transition-all duration-300 text-center">
               Tisch reservieren
             </a>
           </div>
@@ -391,7 +390,7 @@ export default function Home() {
               </blockquote>
               <figcaption className="text-xs text-white/60 mt-2 tracking-wide">Kerstin S., Google-Bewertung</figcaption>
             </figure>
-            <a href={TEL_HREF}
+            <a href="/reservierungen/"
               className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-[var(--color-brand)] text-white font-bold text-sm hover:bg-[var(--color-brand-dark)] transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
               style={{ boxShadow: "0 8px 32px rgba(141,180,58,.4)" }}>
               Jetzt Tisch reservieren
@@ -673,10 +672,18 @@ export default function Home() {
                 Tisch reservieren
               </h2>
               <p className="text-sm text-[var(--color-mid)] mb-6 leading-relaxed">
-                Wählen Sie Tag und Uhrzeit. Ist Platz frei, ist Ihr Tisch sofort reserviert. Bis 8 Personen online, größere Gruppen bitte per Telefon oder WhatsApp.
+                Online in einer Minute: Tag und Uhrzeit wählen, und ist Platz frei, ist Ihr Tisch sofort reserviert. Bis 8 Personen online, größere Gruppen bitte per Telefon oder WhatsApp.
               </p>
-              <div className="p-5 md:p-6 rounded-2xl bg-[var(--color-brand-pale)] border border-[var(--color-brand-light)]">
-                <OnlineBooking />
+              <div className="p-5 md:p-6 rounded-2xl bg-[var(--color-brand-pale)] border border-[var(--color-brand-light)] grid gap-4">
+                <ul className="grid gap-2 text-sm text-[var(--color-mid)]">
+                  {["Freie Zeiten auf einen Blick", "Sofortige Bestätigung per E-Mail", "Kostenlos, Storno jederzeit per Link"].map((t) => (
+                    <li key={t} className="flex items-center gap-2.5"><Icon name="check" size={16} strokeWidth={2.4} className="text-[var(--color-brand-dark)] shrink-0" />{t}</li>
+                  ))}
+                </ul>
+                <a href="/reservierungen/"
+                  className="inline-flex items-center justify-center gap-2 px-7 py-4 rounded-full bg-[var(--color-brand-dark)] text-white font-bold text-sm hover:bg-[var(--color-brand-deeper)] transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
+                  <Icon name="calendar" size={17} strokeWidth={2} /> Jetzt online reservieren
+                </a>
               </div>
               <p className="mt-5 text-sm text-[var(--color-mid)] leading-relaxed">
                 <strong className="text-[var(--color-brand-dark)]">Gruppen & Feiern:</strong>{" "}
@@ -778,9 +785,14 @@ export default function Home() {
               Diesen Sonntag auf den Armesberg?
             </h2>
             <p className="text-white/70 max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
-              Sonntags ist es oft voll. Reservieren Sie Ihren Tisch kostenlos per Anruf oder WhatsApp.
+              Sonntags ist es oft voll. Reservieren Sie Ihren Tisch kostenlos online, per Anruf oder per WhatsApp.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center">
+              <a href="/reservierungen/"
+                className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-full bg-[var(--color-brand)] text-white font-bold text-sm tracking-wide hover:bg-[var(--color-brand-dark)] transition-all duration-300 shadow-xl hover:shadow-2xl hover:-translate-y-0.5">
+                <Icon name="calendar" size={16} strokeWidth={2} />
+                Online reservieren
+              </a>
               <a href={TEL_HREF}
                 className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-full bg-white text-[var(--color-brand-dark)] font-bold text-sm tracking-wide hover:bg-[var(--color-brand-pale)] transition-all duration-300 shadow-xl hover:shadow-2xl hover:-translate-y-0.5">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
