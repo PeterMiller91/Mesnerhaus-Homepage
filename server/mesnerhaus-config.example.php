@@ -7,8 +7,15 @@ return [
     // Upload-Link: https://mesnerhausarmesberg.de/tageskarte-upload.php?k=<upload_key>
     'upload_key'                => 'hier-mindestens-24-zufaellige-zeichen',
 
-    // Absender für Reservierungs-E-Mails (optional)
-    // 'mail_from'              => 'kontakt@mesnerhausarmesberg.de',
+    // ── E-Mail-Versand der Reservierungen ──────────────────────────
+    // Ohne SMTP-Angaben verschickt der Webserver selbst (PHP mail()).
+    // Zuverlässiger: über das echte Postfach per SMTP (Daten wie im Mailprogramm):
+    // 'smtp_host'   => 'mail.beispiel.de',      // Postausgangsserver
+    // 'smtp_port'   => 587,                     // 587 = STARTTLS, 465 = SSL
+    // 'smtp_secure' => 'tls',                   // 'tls' (587) oder 'ssl' (465)
+    // 'smtp_user'   => 'kontakt@mesnerhausarmesberg.de',
+    // 'smtp_pass'   => 'Passwort des Postfachs',
+    // 'mail_from'   => 'kontakt@mesnerhausarmesberg.de', // Absender (Standard: smtp_user)
 
     'site_url'                  => 'https://mesnerhausarmesberg.de',
 

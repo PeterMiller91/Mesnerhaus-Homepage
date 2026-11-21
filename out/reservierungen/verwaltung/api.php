@@ -21,7 +21,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if (isset($_GET['settings'])) {
         if (!$isAdmin) out(403, ['ok' => false]);
         $users = array_map(function ($id, $u) { return ['id' => $id, 'name' => $u['name'], 'role' => $u['role']]; }, array_keys(rv_users()), rv_users());
-        out(200, ['ok' => true, 'settings' => $s, 'users' => $users]);
+        $c = tk_config();
+        $mail = ['mode' => rv_mail_mode(), 'from' => rv_mail_from(), 'smtp_host' => (string)($c['smtp_host'] ?? ''), 'smtp_port' => (int)($c['smtp_port'] ?? 0),
+                 'log' => rv_read_json('resv-maillog', [])];
+        out(200, ['ok' => true, 'settings' => $s, 'users' => $users, 'mail' => $mail]);
     }
 
     $date = (string)($_GET['day'] ?? date('Y-m-d'));
@@ -166,6 +169,15 @@ if ($act === 'settings') {
     ];
     $new['online_seats'] = max(0, min($new['seats'], (int)($n['online_seats'] ?? $new['seats'])));
     out(rv_write_json('resv-settings', $new) ? 200 : 500, ['ok' => true, 'message' => 'Einstellungen gespeichert.']);
+}
+
+if ($act === 'mail_test') {
+    $to = trim((string)($in['to'] ?? ''));
+    if (!filter_var($to, FILTER_VALIDATE_EMAIL)) out(400, ['ok' => false, 'message' => 'Bitte eine gültige E-Mail-Adresse eingeben.']);
+    $ok = rv_mail($to, 'Test-E-Mail der Reservierungs-App', "Diese Test-E-Mail kommt von der Reservierungs-App des Mesnerhaus.\n\nWenn Sie sie lesen, funktioniert der Versand.\n\nVersandweg: " . (rv_mail_mode() === 'smtp' ? 'SMTP' : 'PHP mail() des Webservers') . "\nAbsender: " . rv_mail_from() . "\n", '', 'Test-E-Mail');
+    out(200, ['ok' => $ok, 'message' => $ok
+        ? 'Der Server hat die Test-E-Mail angenommen. Bitte Posteingang und Spam-Ordner prüfen.'
+        : 'Versand fehlgeschlagen: ' . ($GLOBALS['rv_mail_error'] ?: 'unbekannter Fehler')]);
 }
 
 if ($act === 'user_password') {

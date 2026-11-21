@@ -66,10 +66,32 @@ Online zählt „davon online“, beim Eintragen in der App „Plätze gesamt“
 
 ## E-Mails
 
-Versand über PHPs `mail()` des Servers mit Absender `kontakt@mesnerhausarmesberg.de`.
-Anderer Absender: in `mesnerhaus-config.php` `'mail_from' => 'reservierung@…'` eintragen.
-Kommen E-Mails nicht an oder landen im Spam: in Plesk unter „Mail“ prüfen, dass die Domain Mails versenden darf
-(SPF/DKIM aktiv).
+Zwei Versandwege:
+
+1. **SMTP über das echte Postfach (empfohlen).** In `mesnerhaus-config.php` eintragen (Daten wie im Mailprogramm, „Postausgangsserver“):
+   ```php
+   'smtp_host'   => 'mail.beispiel.de',
+   'smtp_port'   => 587,          // 587 = STARTTLS, 465 = SSL
+   'smtp_secure' => 'tls',        // 'tls' bei 587, 'ssl' bei 465
+   'smtp_user'   => 'kontakt@mesnerhausarmesberg.de',
+   'smtp_pass'   => 'Passwort des Postfachs',
+   ```
+2. **Ohne SMTP-Angaben:** PHP `mail()` des Webservers. Kommt oft nicht an oder landet im Spam,
+   besonders wenn das Postfach nicht auf demselben Server liegt.
+
+**Prüfen:** Verwaltung → Menü → Einstellungen → **E-Mail-Versand** → „Test-E-Mail senden“.
+Dort stehen Versandweg, Absender, das Ergebnis mit genauer Fehlermeldung und die letzten 8 Versuche
+(Empfänger gekürzt, ohne Inhalt).
+
+Typische Fehlermeldungen:
+
+| Meldung | Bedeutung |
+|---|---|
+| PHP mail() meldet einen Fehler | Webserver darf/kann nicht selbst versenden → SMTP eintragen |
+| SMTP: Keine Verbindung zu … | Servername oder Port falsch, oder der Hoster sperrt ausgehende Verbindungen auf diesem Port (dann 465 statt 587 probieren) |
+| SMTP: Anmeldung fehlgeschlagen | Benutzername oder Passwort falsch |
+| SMTP: TLS-Verschlüsselung fehlgeschlagen | Port/Verschlüsselung passen nicht zusammen (587 ↔ tls, 465 ↔ ssl) |
+| angenommen, aber nichts im Postfach | Spam-Ordner prüfen; bei Versand über den Webserver SPF/DKIM in Plesk aktivieren |
 
 ## Dateien
 

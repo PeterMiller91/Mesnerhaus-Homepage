@@ -230,7 +230,17 @@
         '<fieldset><legend>Öffnungstage</legend><div class="week"><div class="wd head"><span></span><span>Öffnet</span><span>Letzte Ankunft</span><span>Schließt</span></div>' + wk + '</div></fieldset>' +
         '<fieldset><legend>Geschlossene Tage (Urlaub, Feiertage)</legend><div class="tags" data-closed></div>' +
         '<div class="grid2" style="align-items:end"><label>Datum<input type="date" data-addday></label><button type="button" class="btn small ghost" data-addbtn>Hinzufügen</button></div></fieldset>' +
-        '<fieldset><legend>Zugänge</legend>' + users + '</fieldset>';
+        '<fieldset><legend>Zugänge</legend>' + users + '</fieldset>' +
+        '<fieldset><legend>E-Mail-Versand</legend>' +
+        '<p class="hint">Versandweg: <b>' + (j.mail.mode === 'smtp' ? 'SMTP über ' + esc(j.mail.smtp_host) + ':' + j.mail.smtp_port : 'PHP mail() des Webservers') + '</b> · Absender: ' + esc(j.mail.from) + '</p>' +
+        '<div class="grid2" style="align-items:end"><label>Test-E-Mail an<input type="email" data-testto value="' + esc(s.notify_email || '') + '" placeholder="deine@adresse.de"></label>' +
+        '<button type="button" class="btn small ghost" data-testmail>Test-E-Mail senden</button></div>' +
+        '<p class="alert" data-testres hidden></p>' +
+        (j.mail.log.length ? '<div class="hint"><b>Letzte Versuche</b><ul style="margin:6px 0 0;padding-left:18px">' + j.mail.log.slice(0, 8).map(function (l) {
+          return '<li>' + esc(new Date(l.at).toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' })) + ' · ' + esc(l.what) + ' an ' + esc(l.to) + ': ' +
+            (l.ok ? '<b style="color:var(--ok-fg)">angenommen</b>' : '<b style="color:var(--err)">fehlgeschlagen</b> ' + esc(l.error)) + '</li>';
+        }).join('') + '</ul></div>' : '<p class="hint">Noch keine Versuche protokolliert.</p>') +
+        '</fieldset>';
       var dlg = dialog('Einstellungen', body, '<button type="button" class="btn ghost" data-close2>Abbrechen</button><button type="submit" class="btn primary">Speichern</button>');
       var drawClosed = function () {
         $('[data-closed]', dlg).innerHTML = closed.length ? closed.map(function (c, i) { return '<span>' + esc(shortDate(c)) + c.slice(0, 4) + '<button type="button" aria-label="Entfernen" data-rm="' + i + '">' + ico('close') + '</button></span>'; }).join('') : '<span class="muted" style="background:none;padding:0">Keine</span>';
@@ -243,6 +253,14 @@
         b.addEventListener('click', function () {
           var inp = $('[data-upw="' + b.dataset.setpw + '"]', dlg);
           api('POST', { action: 'user_password', id: b.dataset.setpw, new: inp.value }).then(function (r) { if (r.ok) { inp.value = ''; toast(r.message); } else showErr(dlg, r.message || 'Fehler'); });
+        });
+      });
+      $('[data-testmail]', dlg).addEventListener('click', function (e) {
+        var b = e.currentTarget, res = $('[data-testres]', dlg);
+        b.disabled = true; b.textContent = 'Wird gesendet …';
+        api('POST', { action: 'mail_test', to: $('[data-testto]', dlg).value }).then(function (r) {
+          res.textContent = r.message || 'Fehler'; res.className = 'alert ' + (r.ok ? 'ok' : 'err'); res.hidden = false;
+          b.disabled = false; b.textContent = 'Test-E-Mail senden';
         });
       });
       var form = $('form', dlg);

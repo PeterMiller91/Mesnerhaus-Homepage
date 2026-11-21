@@ -139,18 +139,107 @@ function rv_clean(string $v, int $max): string {
 function rv_new_token(): string { return bin2hex(random_bytes(16)); }
 
 /* ── E-Mails ─────────────────────────────────────────────────── */
-function rv_mail(string $to, string $subject, string $body, string $replyTo = ''): bool {
-    if (!filter_var($to, FILTER_VALIDATE_EMAIL) || !function_exists('mail')) return false;
-    $from = (string)(tk_config()['mail_from'] ?? 'kontakt@mesnerhausarmesberg.de');
+/* E-Mail-Versand: per SMTP (wenn in mesnerhaus-config.php eingetragen), sonst über PHP mail().
+   Jeder Versuch wird kurz protokolliert (ohne Inhalt), damit Fehler sichtbar werden. */
+$GLOBALS['rv_mail_error'] = '';
+
+function rv_mail_mode(): string { return trim((string)(tk_config()['smtp_host'] ?? '')) !== '' ? 'smtp' : 'php'; }
+
+function rv_mail_from(): string {
+    $c = tk_config();
+    foreach ([$c['mail_from'] ?? '', $c['smtp_user'] ?? ''] as $a) if (filter_var((string)$a, FILTER_VALIDATE_EMAIL)) return (string)$a;
+    return 'kontakt@mesnerhausarmesberg.de';
+}
+
+function rv_mail(string $to, string $subject, string $body, string $replyTo = '', string $kind = ''): bool {
+    $GLOBALS['rv_mail_error'] = '';
+    if (!filter_var($to, FILTER_VALIDATE_EMAIL)) { $GLOBALS['rv_mail_error'] = 'Ungültige Empfängeradresse'; return false; }
+    $from = rv_mail_from();
+    $host = preg_replace('/^.*@/', '', $from);
     $headers = [
-        'From: Mesnerhaus am Armesberg <' . $from . '>',
+        'Date: ' . date('r'),
+        'From: =?UTF-8?B?' . base64_encode('Mesnerhaus am Armesberg') . '?= <' . $from . '>',
+        'To: <' . $to . '>',
+        'Subject: =?UTF-8?B?' . base64_encode($subject) . '?=',
+        'Message-ID: <' . bin2hex(random_bytes(12)) . '@' . $host . '>',
         'MIME-Version: 1.0',
         'Content-Type: text/plain; charset=UTF-8',
-        'Content-Transfer-Encoding: 8bit',
+        'Content-Transfer-Encoding: base64',
     ];
-    if ($replyTo !== '' && filter_var($replyTo, FILTER_VALIDATE_EMAIL)) $headers[] = 'Reply-To: ' . $replyTo;
-    $subj = '=?UTF-8?B?' . base64_encode($subject) . '?=';
-    return @mail($to, $subj, $body, implode("\r\n", $headers), '-f' . $from);
+    if ($replyTo !== '' && filter_var($replyTo, FILTER_VALIDATE_EMAIL)) $headers[] = 'Reply-To: <' . $replyTo . '>';
+    $b64 = rtrim(chunk_split(base64_encode(str_replace(["\r\n", "\r"], "\n", $body)), 76, "\r\n"));
+
+    if (rv_mail_mode() === 'smtp') {
+        $ok = rv_smtp_send($from, $to, implode("\r\n", $headers) . "\r\n\r\n" . $b64);
+    } elseif (!function_exists('mail')) {
+        $ok = false; $GLOBALS['rv_mail_error'] = 'PHP mail() ist auf dem Server deaktiviert';
+    } else {
+        // mail() setzt To und Subject selbst
+        $extra = array_values(array_filter($headers, function ($h) { return stripos($h, 'To:') !== 0 && stripos($h, 'Subject:') !== 0; }));
+        $ok = @mail($to, '=?UTF-8?B?' . base64_encode($subject) . '?=', $b64, implode("\r\n", $extra), '-f' . $from);
+        if (!$ok) { $e = error_get_last(); $GLOBALS['rv_mail_error'] = 'PHP mail() meldet einen Fehler' . ($e ? ': ' . $e['message'] : ''); }
+    }
+    rv_mail_log($to, $kind ?: $subject, $ok, (string)$GLOBALS['rv_mail_error']);
+    return $ok;
+}
+
+function rv_mail_log(string $to, string $what, bool $ok, string $err): void {
+    $masked = preg_replace('/^(.).*(@.*)$/', '$1***$2', $to);
+    $log = rv_read_json('resv-maillog', []);
+    array_unshift($log, ['at' => date('c'), 'to' => $masked, 'what' => function_exists('mb_substr') ? mb_substr($what, 0, 60) : substr($what, 0, 60),
+        'mode' => rv_mail_mode(), 'ok' => $ok, 'error' => substr($err, 0, 200)]);
+    rv_write_json('resv-maillog', array_slice($log, 0, 25));
+}
+
+/* Minimaler SMTP-Client: SSL (Port 465) oder STARTTLS (Port 587), AUTH LOGIN. */
+function rv_smtp_send(string $from, string $to, string $data): bool {
+    $c = tk_config();
+    $host = (string)$c['smtp_host'];
+    $port = (int)($c['smtp_port'] ?? 587);
+    $sec  = strtolower((string)($c['smtp_secure'] ?? ($port === 465 ? 'ssl' : 'tls')));
+    $user = (string)($c['smtp_user'] ?? '');
+    $pass = (string)($c['smtp_pass'] ?? '');
+    $fail = function (string $m) use (&$fp) { $GLOBALS['rv_mail_error'] = 'SMTP: ' . $m; if (is_resource($fp)) { @fwrite($fp, "QUIT\r\n"); @fclose($fp); } return false; };
+
+    $ctx = stream_context_create(['ssl' => ['verify_peer' => true, 'verify_peer_name' => true, 'SNI_enabled' => true, 'peer_name' => $host]]);
+    $fp = @stream_socket_client(($sec === 'ssl' ? 'ssl://' : 'tcp://') . $host . ':' . $port, $errno, $errstr, 15, STREAM_CLIENT_CONNECT, $ctx);
+    if (!$fp) return $fail("Keine Verbindung zu $host:$port ($errstr)");
+    stream_set_timeout($fp, 20);
+
+    $read = function () use (&$fp): string {
+        $out = '';
+        while (($line = fgets($fp, 1024)) !== false) { $out .= $line; if (strlen($line) < 4 || $line[3] === ' ') break; }
+        return $out;
+    };
+    $cmd = function (string $c, array $okCodes) use (&$fp, $read): array {
+        if ($c !== '') fwrite($fp, $c . "\r\n");
+        $r = $read();
+        return [in_array((int)substr($r, 0, 3), $okCodes, true), trim($r)];
+    };
+
+    [$ok, $r] = $cmd('', [220]);                       if (!$ok) return $fail("Begrüßung: $r");
+    $me = preg_replace('/[^a-z0-9.\-]/i', '', (string)($_SERVER['SERVER_NAME'] ?? 'localhost')) ?: 'localhost';
+    [$ok, $r] = $cmd("EHLO $me", [250]);               if (!$ok) return $fail("EHLO: $r");
+    if ($sec === 'tls') {
+        [$ok, $r] = $cmd('STARTTLS', [220]);            if (!$ok) return $fail("STARTTLS: $r");
+        $m = STREAM_CRYPTO_METHOD_TLS_CLIENT;
+        if (defined('STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT')) $m |= STREAM_CRYPTO_METHOD_TLSv1_2_CLIENT;
+        if (defined('STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT')) $m |= STREAM_CRYPTO_METHOD_TLSv1_3_CLIENT;
+        if (!@stream_socket_enable_crypto($fp, true, $m)) return $fail('TLS-Verschlüsselung fehlgeschlagen (Zertifikat?)');
+        [$ok, $r] = $cmd("EHLO $me", [250]);           if (!$ok) return $fail("EHLO nach TLS: $r");
+    }
+    if ($user !== '') {
+        [$ok, $r] = $cmd('AUTH LOGIN', [334]);          if (!$ok) return $fail("AUTH: $r");
+        [$ok, $r] = $cmd(base64_encode($user), [334]);  if (!$ok) return $fail("Benutzername abgelehnt: $r");
+        [$ok, $r] = $cmd(base64_encode($pass), [235]);  if (!$ok) return $fail("Anmeldung fehlgeschlagen (Benutzer/Passwort prüfen): $r");
+    }
+    [$ok, $r] = $cmd("MAIL FROM:<$from>", [250]);       if (!$ok) return $fail("Absender abgelehnt: $r");
+    [$ok, $r] = $cmd("RCPT TO:<$to>", [250, 251]);      if (!$ok) return $fail("Empfänger abgelehnt: $r");
+    [$ok, $r] = $cmd('DATA', [354]);                    if (!$ok) return $fail("DATA: $r");
+    $data = preg_replace('/^\./m', '..', str_replace(["\r\n", "\r", "\n"], ["\n", "\n", "\r\n"], $data));
+    [$ok, $r] = $cmd($data . "\r\n.", [250]);           if (!$ok) return $fail("Nachricht abgelehnt: $r");
+    @fwrite($fp, "QUIT\r\n"); @fclose($fp);
+    return true;
 }
 
 function rv_site_url(): string {
@@ -176,19 +265,19 @@ function rv_mail_guest_confirm(array $r): bool {
         . "\nAdresse: Armesberg 2, 95508 Kulmain\n\n"
         . "Falls Sie nicht kommen können, stornieren Sie bitte hier, damit andere Gäste den Platz bekommen:\n$link\n\n"
         . "Wir freuen uns auf Sie!\nIhr Mesnerhaus am Armesberg\nTel. 0151 110 56 281\n";
-    return rv_mail((string)$r['email'], 'Ihre Reservierung im Mesnerhaus: ' . date('d.m.', strtotime($r['date'])) . ' um ' . $r['time'] . ' Uhr', $body);
+    return rv_mail((string)$r['email'], 'Ihre Reservierung im Mesnerhaus: ' . date('d.m.', strtotime($r['date'])) . ' um ' . $r['time'] . ' Uhr', $body, '', 'Bestätigung an Gast');
 }
 
 function rv_mail_owner(array $r, string $what): bool {
     $s = rv_settings();
-    $to = $s['notify_email'] !== '' ? (string)$s['notify_email'] : (string)(tk_config()['mail_from'] ?? 'kontakt@mesnerhausarmesberg.de');
+    $to = $s['notify_email'] !== '' ? (string)$s['notify_email'] : 'kontakt@mesnerhausarmesberg.de';
     $body = "$what\n\n"
         . rv_date_de($r['date']) . ", " . $r['time'] . " Uhr\n"
         . $r['persons'] . " Personen · " . $r['name'] . "\n"
         . "Telefon: " . ($r['phone'] ?: '–') . "\nE-Mail: " . ($r['email'] ?: '–') . "\n"
         . ($r['note'] !== '' ? "Wunsch: " . $r['note'] . "\n" : '')
         . "\nZur Übersicht: " . rv_site_url() . "/reservierungen/verwaltung/\n";
-    return rv_mail($to, $what . ': ' . date('d.m.', strtotime($r['date'])) . ' ' . $r['time'] . ', ' . $r['persons'] . ' P., ' . $r['name'], $body, (string)$r['email']);
+    return rv_mail($to, $what . ': ' . date('d.m.', strtotime($r['date'])) . ' ' . $r['time'] . ', ' . $r['persons'] . ' P., ' . $r['name'], $body, (string)$r['email'], 'Info an Betrieb: ' . $what);
 }
 
 /* ── Benutzer & Anmeldung ────────────────────────────────────── */
