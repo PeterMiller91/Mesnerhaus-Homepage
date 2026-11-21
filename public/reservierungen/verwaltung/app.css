@@ -213,7 +213,8 @@ body.has-app{background:#F5F4EE}
 .menu-list button:hover{background:var(--pale)}
 .menu-list .who{padding:8px 12px 10px;font-size:13px;color:var(--muted);border-bottom:1px solid var(--line);margin-bottom:4px}
 
-main.app{max-width:1360px;margin:0 auto;padding:24px max(20px,env(safe-area-inset-right)) 60px max(20px,env(safe-area-inset-left));display:grid;gap:18px}
+main.app>*{min-width:0}
+main.app{grid-template-columns:minmax(0,1fr);max-width:1360px;margin:0 auto;padding:24px max(20px,env(safe-area-inset-right)) 60px max(20px,env(safe-area-inset-left));display:grid;gap:18px}
 .dash{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:24px;align-items:start}
 .dash-main,.dash-side{display:grid;gap:18px;min-width:0}
 .panel{border:0;border-radius:20px;padding:18px 22px;box-shadow:0 1px 2px rgba(40,40,20,.06)}
@@ -370,3 +371,29 @@ main.app{max-width:1360px;margin:0 auto;padding:24px max(20px,env(safe-area-inse
   .card .av{display:none}
   .card{grid-template-columns:minmax(0,1fr) auto}
 }
+
+/* Tischplan auf dem Handy: Plan passt in die Breite, Tische zusätzlich als Liste */
+.tbl-list{display:none}
+@media (max-width:860px){
+  .plan-head{gap:6px}
+  .plan-head h2{font-size:19px}
+  .plan-head .btn{min-height:36px;padding:6px 10px;font-size:12px}
+  .times{margin:0 -14px;padding:2px 14px 10px}
+}
+@media (max-width:640px){
+  .plan{min-width:0}
+  .plan-wrap{overflow:visible}
+  .plan:not(.editing) .tbl .g,.plan:not(.editing) .tbl .s{display:none}
+  .tbl{padding:2px;border-radius:8px}
+  .tbl b{font-size:13px}
+  .tbl-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}
+  .tl-item{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-rows:auto auto;column-gap:10px;align-items:center;text-align:left;padding:9px 11px;border-radius:12px;border:1.5px solid #CFCFC4;background:#fff;min-height:56px}
+  .tl-item b{grid-row:1/3;font-size:18px;min-width:26px;text-align:center}
+  .tl-item span{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tl-item small{font-size:11px;color:var(--muted)}
+  .tl-item.busy{background:var(--ok-bg);border-color:#7FA84E}
+  .tl-item.here{background:var(--here-bg);border-color:#6E9AC2}
+  .tl-item.mine{background:#FFE9C9;border-color:var(--warn)}
+  .tl-item.clash{border-color:var(--err)}
+}
+@media print{.tbl-list{display:none!important}}

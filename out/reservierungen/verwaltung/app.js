@@ -195,7 +195,7 @@
   }
 
   function curveHtml(d) {
-    if (!d.load.length) return '';
+    if (!d.load.length || !d.stats.peak) return '';
     var W = 340, H = 150, top = 22, base = 128, n = d.load.length;
     var max = Math.max(d.seats, d.stats.peak, 1);
     var x = function (i) { return n === 1 ? W / 2 : Math.round(i / (n - 1) * W * 10) / 10; };
@@ -666,6 +666,13 @@
     h += '</div>';
 
     if (!editing) {
+      // Handy: Tische zusätzlich als Liste (der Plan ist dort klein)
+      h += '<div class="tbl-list">' + plan.tables.filter(function (t) { return t.area === S.area; }).map(function (t) {
+        var r = occ[t.id], mine = assigning && (assigning.tables || []).indexOf(t.id) >= 0;
+        var st = mine ? 'mine' : r ? (r.status === 'erschienen' ? 'here' : 'busy') : 'free';
+        return '<button class="tl-item ' + st + (clash[t.id] ? ' clash' : '') + '" data-tbl="' + esc(t.id) + '"><b>' + esc(t.name) + '</b>' +
+          '<span>' + (r && !mine ? esc(r.name) + ' · ' + r.persons + ' P. · ' + esc(r.time) : (mine ? 'gewählt' : 'frei')) + '</span><small>' + t.seats + ' Pl.</small></button>';
+      }).join('') + '</div>';
       h += '<div class="plan-foot"><div class="legend"><span><i class="lg free"></i>frei</span><span><i class="lg busy"></i>reserviert</span><span><i class="lg here"></i>Gäste da</span><span><i class="lg clash"></i>doppelt belegt</span></div>';
       if (unassigned.length) {
         h += '<div class="unassigned"><b>Ohne Tisch (' + unassigned.length + '):</b> ' + unassigned.map(function (r) {
