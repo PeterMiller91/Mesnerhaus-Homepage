@@ -63,8 +63,8 @@ const benefits: { icon: IconName; title: string; body: string }[] = [
   },
   {
     icon: "plate",
-    title: "Hausgemacht statt aufgewärmt",
-    body: "Wir kochen frisch und von Hand, mit vielen Zutaten aus der Region. Die Tageskarte wechselt jede Woche.",
+    title: "Aus der eigenen Küche",
+    body: "Gekocht wird bei uns im Haus, bodenständig und mit Liebe. Die Tageskarte wechselt jede Woche.",
   },
   {
     icon: "cake",
@@ -89,7 +89,7 @@ const gallery: GalleryItem[] = [
   { base: "kuechle",         src: { small: 360, large: 800 },  alt: "Selbstgebackene Küchle", caption: "Selbstgebackene Küchle" },
   { base: "eisbecher",       src: { small: 360, large: 800 },  alt: "Eisbecher mit Karamell und Waffel", caption: "Eisbecher mit Karamell", pos: "center 35%" },
   { base: "abend",           src: { small: 360, large: 800 },  alt: "Abendstimmung am Armesberg", caption: "Abendstimmung am Armesberg", pos: "center 40%" },
-  { base: "essen1",          src: { small: 360, large: 800 },  alt: "Hausgemachtes Gericht mit Bratkartoffeln und Salat", caption: "Frisch gekocht, von Hand" },
+  { base: "essen1",          src: { small: 360, large: 800 },  alt: "Gericht mit Bratkartoffeln und Salat", caption: "Aus unserer Küche" },
   { base: "essen2",          src: { small: 360, large: 800 },  alt: "Braten mit Bratkartoffeln", caption: "Braten mit Bratkartoffeln" },
 ];
 
@@ -198,7 +198,7 @@ export default function Home() {
           </div>
           <p className="hero-claim text-base md:text-xl text-white/80 italic max-w-[22rem] md:max-w-xl text-balance mb-9 md:mb-11"
             style={{ fontFamily: "var(--font-playfair)" }}>
-            Hausgemachte Küche und Kuchen mit Weitblick.<br />Jeden Sonntag von 11 bis 17 Uhr.
+            Bodenständige Küche, selbstgebackene Kuchen und Weitblick.<br />Jeden Sonntag von 11 bis 17 Uhr.
           </p>
           <div className="hero-claim flex flex-wrap justify-center gap-2.5 -mt-4 mb-8 md:mb-10">
             <OpenStatus />
@@ -273,7 +273,7 @@ export default function Home() {
               <ScrollReveal delay={220}><Divider /></ScrollReveal>
               <ScrollReveal delay={300} className="mt-5 space-y-4 text-[var(--color-mid)] leading-relaxed text-sm md:text-base">
                 <p>Das Mesnerhaus liegt direkt unterhalb der Wallfahrtskirche zur Heiligen Dreifaltigkeit, auf 731 Metern, mit weitem Blick über die Oberpfalz. Seit über 20 Jahren führen wir es als Familienbetrieb.</p>
-                <p>Gekocht wird bei uns frisch und von Hand, mit vielen Zutaten aus der Region. Zum Kaffee gibt es selbstgebackene Kuchen und Torten.</p>
+                <p>Gekocht wird bei uns im Haus. Zum Kaffee gibt es selbstgebackene Kuchen und Torten.</p>
                 <blockquote className="border-l-2 border-[var(--color-brand)] pl-4 italic">
                   „Das Essen war einfach der Hammer. Sehr lecker, wie bei Oma. Portionen sind ausreichend und die Preise sind sehr fair.“
                   <footer className="not-italic text-xs text-[var(--color-muted)] mt-1.5">Matthias G., Google-Bewertung</footer>
@@ -356,7 +356,7 @@ export default function Home() {
               </ScrollReveal>
               <ScrollReveal delay={180}>
                 <p className="text-[var(--color-mid)] max-w-lg mx-auto mt-3 text-sm md:text-base">
-                  Bodenständige bayerische Küche, frisch und von Hand gekocht. Typisch bei uns: Braten, Wild, Fisch und hausgemachte Kuchen. Die Karte wechselt jede Woche.
+                  Bodenständige bayerische Küche aus unserer eigenen Küche. Typisch bei uns: Braten, Wild, Fisch und selbstgebackene Kuchen. Die Karte wechselt jede Woche.
                 </p>
               </ScrollReveal>
             </div>
@@ -427,7 +427,7 @@ export default function Home() {
                     </div>
                   )}
                   <div className="flex flex-wrap gap-1.5">
-                    {["weite Aussicht", "hausgemacht", "Kuchen & Torten", "freundliches Personal", "faire Preise"].map((t) => (
+                    {["weite Aussicht", "gute Küche", "Kuchen & Torten", "freundliches Personal", "faire Preise"].map((t) => (
                       <span key={t} className="text-xs px-2.5 py-1 rounded-full bg-[var(--color-brand-pale)] text-[var(--color-brand-dark)] border border-[var(--color-brand-light)]">{t}</span>
                     ))}
                   </div>
@@ -441,6 +441,11 @@ export default function Home() {
                     className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full border-2 border-[var(--color-brand)] text-[var(--color-brand-dark)] font-bold text-sm hover:bg-[var(--color-brand-pale)] transition-colors">
                     Alle Bewertungen auf Google <Icon name="external" size={15} />
                   </a>
+                  <p className="text-xs leading-relaxed text-[var(--color-muted)]">
+                    Hinweis zu den Bewertungen: Wir zeigen eine Auswahl öffentlicher Google-Bewertungen in wörtlicher Wiedergabe (Namen gekürzt).
+                    Wir prüfen nicht, ob die Verfasser tatsächlich bei uns zu Gast waren. Google veröffentlicht Bewertungen nach eigenen Richtlinien.
+                    Alle Bewertungen, auch kritische, finden Sie auf Google.
+                  </p>
                 </aside>
               </ScrollReveal>
               {REVIEWS.length > 0 && (

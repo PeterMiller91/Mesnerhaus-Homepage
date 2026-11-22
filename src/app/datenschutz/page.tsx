@@ -124,6 +124,13 @@ export default function Datenschutz() {
         <CookieSettingsLink className="inline-flex px-5 py-2.5 rounded-full bg-[var(--color-brand-dark)] text-white font-bold text-sm hover:bg-[var(--color-brand-deeper)] transition-colors" />
       </div>
 
+      <p>
+        <strong>Ausnahme Team-Anmeldung:</strong> Nur wenn sich Mitarbeiterinnen und Mitarbeiter des Mesnerhaus unten auf der Reservierungsseite
+        anmelden, setzt die Verwaltung ein technisch notwendiges Sitzungs-Cookie (<code>mh_resv</code>, gültig für den Pfad
+        <code>/reservierungen/verwaltung/</code>, höchstens 30 Tage). Es dient allein der Anmeldung (§ 25 Abs. 2 Nr. 2 TDDDG). Gäste erhalten
+        dieses Cookie nicht.
+      </p>
+
       <h2 id="google-maps">7. Google Maps</h2>
       <p>
         Im Bereich „Anfahrt“ können Sie eine interaktive Karte von Google Maps anzeigen lassen. Anbieter ist die Google Ireland Limited,
@@ -179,10 +186,15 @@ export default function Datenschutz() {
       <p>
         Wenn Sie über unsere Website einen Tisch reservieren, verarbeiten wir Name, Telefonnummer, E-Mail-Adresse, Datum, Uhrzeit,
         Personenzahl und Ihren optionalen Wunsch. Die Daten werden ausschließlich auf unserem eigenen Webserver bei netcup gespeichert und
-        nur von uns (Inhaberin und Empfang) in einer passwortgeschützten Verwaltung genutzt, um Ihre Reservierung zu planen und Sie bei
-        Rückfragen zu erreichen. Sie erhalten eine Bestätigung per E-Mail mit einem Link, über den Sie die Reservierung selbst stornieren können.
+        nur von uns (Inhaberin und berechtigte Mitarbeiter mit eigenem Zugang) in einer passwortgeschützten Verwaltung genutzt, um Ihre
+        Reservierung zu planen und Sie bei Rückfragen zu erreichen. Sie erhalten eine Bestätigung per E-Mail mit einem Link, über den Sie die
+        Reservierung selbst stornieren können. Die E-Mails versenden wir über unser Postfach bei netcup. Außerdem erhalten wir eine
+        Benachrichtigung über die neue Reservierung per E-Mail und als Push-Nachricht auf die Diensthandys. Die Push-Nachricht läuft über den
+        Push-Dienst des jeweiligen Handys (Apple bzw. Google), enthält dabei aber keine Daten: Den Text holt das Handy direkt von unserem Server.
       </p>
       <p>
+        Name, Telefonnummer und E-Mail-Adresse sind Pflichtangaben: Ohne sie können wir die Reservierung nicht bestätigen und Sie bei
+        Rückfragen nicht erreichen. Alternativ können Sie telefonisch reservieren.
         Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO (Durchführung Ihrer Reservierung). Wir löschen die Daten automatisch
         {" "}<strong>60 Tage nach dem Reservierungstermin</strong>. Zum Schutz vor missbräuchlichen Massenanfragen speichern wir beim Absenden
         einen nicht rückrechenbaren Hashwert Ihrer IP-Adresse für höchstens eine Stunde (Art. 6 Abs. 1 lit. f DSGVO). Eine Weitergabe an
@@ -213,7 +225,7 @@ export default function Datenschutz() {
       <p>
         Wir zeigen ausgewählte, öffentlich auf Google abgegebene Bewertungen unserer Gäste. Die Namen geben wir nur in gekürzter Form wieder
         (Vorname und Anfangsbuchstabe). Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO. Unser berechtigtes Interesse ist es, Besuchern einen
-        Eindruck von unserem Haus zu vermitteln. Wenn Sie als Verfasser einer Bewertung nicht möchten, dass diese hier erscheint, genügt eine
+        Eindruck von unserem Haus zu vermitteln. Wir prüfen nicht, ob die Verfasser tatsächlich bei uns zu Gast waren. Wenn Sie als Verfasser einer Bewertung nicht möchten, dass diese hier erscheint, genügt eine
         kurze Nachricht an uns. Wir entfernen sie dann umgehend.
       </p>
 

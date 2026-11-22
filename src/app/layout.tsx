@@ -35,11 +35,11 @@ export const metadata: Metadata = {
   manifest: "/manifest.webmanifest",
   title: "Mesnerhaus – Ausflugsgaststätte am Armesberg",
   description:
-    "Sonntags 11–17 Uhr: hausgemachte Küche, selbstgebackene Kuchen und Weitblick am Armesberg bei Kulmain. Jetzt Tisch reservieren.",
+    "Sonntags 11–17 Uhr: bodenständige Küche, selbstgebackene Kuchen und Weitblick am Armesberg bei Kulmain. Jetzt Tisch reservieren.",
   openGraph: {
     title: "Mesnerhaus – Ausflugsgaststätte am Armesberg",
     description:
-      "Sonntags auf den Armesberg: hausgemachte Küche, Kuchen und Weitblick über die Oberpfalz.",
+      "Sonntags auf den Armesberg: bodenständige Küche, Kuchen und Weitblick über die Oberpfalz.",
     locale: "de_DE",
     url: SITE_URL,
     images: ["/images/panorama-1400.webp"],

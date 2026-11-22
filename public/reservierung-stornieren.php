@@ -81,4 +81,5 @@ a{color:#3D5C15}.ok{color:#2F5A12;font-weight:700}.muted{color:#6E6E66;font-size
   <?php endif; ?>
   <p class="muted" style="margin-top:18px">Mesnerhaus am Armesberg · <a href="tel:+4915111056281">0151 110 56 281</a> · <a href="/">Zur Website</a></p>
 <?php endif; ?>
+<p class="muted" style="margin-top:10px;font-size:13px"><a href="/impressum/">Impressum</a> · <a href="/datenschutz/">Datenschutz</a></p>
 </main></body></html>

@@ -83,7 +83,6 @@ export const REVIEWS: Review[] = [
     stars: 5,
     date: "Oktober 2026",
     text: "Diese Gaststätte kann man nur empfehlen. Hausgemachte Gerichte die man schmeckt. Die hausgemachten Kuchen sind auch sehr zu empfehlen. Das Personal ist sehr freundlich und wir freuen uns schon aufs nächste Mal.",
-    photo: { base: "rezension-backfisch", alt: "Gebackenes Fischfilet mit Kartoffelsalat, Remoulade und Salat" },
   },
   {
     author: "H. W.",

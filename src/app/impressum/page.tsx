@@ -74,8 +74,7 @@ export default function Impressum() {
 
       <h3>Bildnachweis</h3>
       <p>
-        Gästebewertungen und das Foto in der Bewertung von „Klaus P.“ stammen aus öffentlichen Bewertungen auf Google und werden mit
-        Namensnennung in gekürzter Form wiedergegeben. Wetterdaten: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (CC BY 4.0).
+        Die Gästebewertungen stammen aus öffentlichen Bewertungen auf Google und werden wörtlich, mit gekürzter Namensnennung, wiedergegeben. Wetterdaten: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo.com</a> (CC BY 4.0).
       </p>
     </LegalPage>
   );
