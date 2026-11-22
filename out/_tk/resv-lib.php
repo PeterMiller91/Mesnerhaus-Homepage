@@ -541,6 +541,49 @@ function rv_finish_response(string $json, int $code = 200): void {
     @set_time_limit(60);
 }
 
+/* ── Warteschlange für E-Mails und Push ─────────────────────────
+   Buchen/Speichern antwortet sofort; der Versand läuft in einem eigenen Aufruf
+   (/api/queue.php, vom Browser per sendBeacon angestoßen). So wartet niemand auf
+   SMTP oder Push-Dienste, egal wie PHP auf dem Server läuft (FPM oder FastCGI). */
+function rv_queue(string $type, array $data): void {
+    rv_with_lock(function () use ($type, $data) {
+        $q = rv_read_json('resv-queue', []);
+        $q[] = ['type' => $type, 'data' => $data, 'at' => time()];
+        return rv_write_json('resv-queue', $q);
+    });
+}
+function rv_queue_count(): int { return count(rv_read_json('resv-queue', [])); }
+function rv_queue_run(int $max = 30): int {
+    $dir = tk_dir();
+    $lf = @fopen("$dir/resv-queue-run.php", 'c');
+    if (!$lf) return 0;
+    if (!flock($lf, LOCK_EX | LOCK_NB)) { fclose($lf); return 0; }   // läuft schon
+    ignore_user_abort(true);
+    @set_time_limit(180);
+    $n = 0;
+    while ($n < $max) {
+        $job = rv_with_lock(function () {
+            $q = rv_read_json('resv-queue', []);
+            if (!$q) return null;
+            $j = array_shift($q);
+            rv_write_json('resv-queue', $q);
+            return $j;
+        });
+        if (!is_array($job)) break;
+        $d = (array)($job['data'] ?? []);
+        switch ($job['type'] ?? '') {
+            case 'guest_confirm': rv_mail_guest_confirm((array)$d['r']); break;
+            case 'guest_cancel':  rv_mail_guest_cancel((array)$d['r']); break;
+            case 'owner':         rv_mail_owner((array)$d['r'], (string)($d['what'] ?? '')); break;
+            case 'push':          rv_push_notify((string)$d['kind'], (string)$d['title'], (string)$d['body'], (string)($d['url'] ?? '')); break;
+        }
+        $n++;
+    }
+    flock($lf, LOCK_UN);
+    fclose($lf);
+    return $n;
+}
+
 function rv_short(array $r): string {
     return date('d.m.', strtotime((string)$r['date'])) . ' ' . $r['time'] . ' · ' . (int)$r['persons'] . ' P. · ' . $r['name'];
 }

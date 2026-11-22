@@ -142,6 +142,16 @@ Eine Zeile, deren Platzhalter leer ist (z. B. „Ihr Wunsch: {wunsch}“ ohne Wu
 Live-Vorschau mit Beispieldaten, „Test senden“ und „Standard wiederherstellen“ sind eingebaut.
 Gespeichert in `resv-templates.php` im Speicherordner.
 
+## Geschwindigkeit: Versand im Hintergrund
+
+Buchen, Eintragen und Stornieren antworten sofort (Ziel: unter 1 Sekunde). E-Mails und Push-Nachrichten
+werden nicht dabei verschickt, sondern in eine Warteschlange (`resv-queue.php` im Speicherordner) gelegt
+und direkt danach von `/api/queue.php` abgearbeitet. Den Anstoß gibt der Browser im Hintergrund
+(nach der Buchung, nach dem Speichern, beim Storno-Link), außerdem die Verwaltungs-App bei jedem
+Aktualisieren, falls noch etwas wartet. Ergebnis jeder E-Mail: Einstellungen → E-Mail-Versand.
+
+Optional (falls Plesk „Geplante Aufgaben“ erlaubt): jede Minute `https://mesnerhausarmesberg.de/api/queue.php` abrufen lassen.
+
 ## E-Mails
 
 Zwei Versandwege:

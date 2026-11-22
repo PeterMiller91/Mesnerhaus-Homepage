@@ -14,6 +14,10 @@
   <ElseIf "%{REQUEST_URI} =~ m#\.(webp|jpe?g|png|gif|svg|ico|woff2?)$#">
     Header set Cache-Control "public, max-age=2592000"
   </ElseIf>
+  # Verwaltungs-App: app.js/app.css?v=… ändern bei jeder neuen Version die Nummer: 1 Jahr
+  <ElseIf "%{QUERY_STRING} =~ /^v=[0-9]+$/ && %{REQUEST_URI} =~ m#\.(js|css)$#">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </ElseIf>
   # HTML-Seiten: immer kurz nachfragen, damit Änderungen sofort sichtbar sind
   <ElseIf "%{REQUEST_URI} =~ m#(/|\.html)$#">
     Header set Cache-Control "no-cache"

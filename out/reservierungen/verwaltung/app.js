@@ -38,7 +38,10 @@
     var el = document.createElement('div'); el.className = 'toast'; el.setAttribute('role', 'status'); el.textContent = t;
     document.body.appendChild(el); setTimeout(function () { el.remove(); }, 3200);
   }
+  // Schreib-Aktionen bekommen die frischen Tagesdaten gleich mit (keine zweite Anfrage nötig)
+  var WITH_DAY = { save: 1, status: 1, assign: 1, auto_assign: 1, seen: 1, 'delete': 1, plan_save: 1, settings: 1 };
   function api(method, body, query) {
+    if (body && WITH_DAY[body.action] && !body._day) body._day = S.date;
     var opt = { method: method, headers: { 'X-CSRF': boot.csrf }, credentials: 'same-origin' };
     if (body) { opt.body = JSON.stringify(body); opt.headers['Content-Type'] = 'application/json'; }
     return fetch('api.php' + (query || ''), opt).then(function (r) {
@@ -57,7 +60,23 @@
   /* ── Laden ──────────────────────────────────────────────── */
   function load(date) {
     if (date) S.date = date;
-    return api('GET', null, '?day=' + encodeURIComponent(S.date)).then(function (j) { S.data = j; render(); if (S.view === 'alle') loadList(); });
+    return api('GET', null, '?day=' + encodeURIComponent(S.date)).then(function (j) { S.data = j; render(); if (S.view === 'alle') loadList(); kick(j); });
+  }
+
+  // E-Mails/Push aus der Warteschlange verschicken lassen (Hintergrund, niemand wartet darauf)
+  function kick(j) {
+    if (!j || !j.queue) return;
+    try { if (!(navigator.sendBeacon && navigator.sendBeacon('/api/queue.php'))) fetch('/api/queue.php', { method: 'POST', keepalive: true }); } catch { /* egal */ }
+  }
+  // Antwort einer Schreib-Aktion übernehmen: Tagesdaten liegen meist schon bei
+  function after(j, date) {
+    kick(j);
+    if (j && j.day) {
+      S.data = j.day; S.date = j.day.date; render();
+      if (S.view === 'alle') loadList();
+      return Promise.resolve();
+    }
+    return load(date);
   }
 
   /* ── Darstellung ────────────────────────────────────────── */
@@ -306,7 +325,7 @@
       b.disabled = true;
       api('POST', { action: 'delete', ids: ids }).then(function (j) {
         if (!j.ok) { b.disabled = false; showErr(dlg, j.message || 'Löschen fehlgeschlagen.'); return; }
-        dlg.close(); toast(j.message); S.picked = {}; S.pickMode = false; load();
+        dlg.close(); toast(j.message); S.picked = {}; S.pickMode = false; after(j);
       });
     });
   }
@@ -400,7 +419,7 @@
     var dlg = dialog('Neu eingegangen', body, (u.length ? '<button type="button" class="btn ghost" data-seenall>Alle gesehen</button>' : '') + '<span style="flex:1"></span><button type="button" class="btn primary" data-close2>Schließen</button>');
     $('[data-close2]', dlg).addEventListener('click', function () { dlg.close(); });
     if ($('[data-seenall]', dlg)) $('[data-seenall]', dlg).addEventListener('click', function () {
-      api('POST', { action: 'seen', ids: u.map(function (x) { return x.id; }) }).then(function () { dlg.close(); load(); });
+      api('POST', { action: 'seen', ids: u.map(function (x) { return x.id; }) }).then(function (j) { dlg.close(); after(j); });
     });
     $$('[data-uopen]', dlg).forEach(function (b) {
       b.addEventListener('click', function () {
@@ -465,7 +484,7 @@
       var b = e.currentTarget;
       if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Wirklich stornieren?'; return; }
       var notify = !!$('[data-notify]', dlg) && $('[data-notify]', dlg).checked;
-      api('POST', { action: 'status', id: r.id, status: 'storniert', notify: notify }).then(function (j) { dlg.close(); toast(j.mailed ? 'Storniert, E-Mail an den Gast wird gesendet' : 'Storniert'); load(); });
+      api('POST', { action: 'status', id: r.id, status: 'storniert', notify: notify }).then(function (j) { dlg.close(); toast(j.mailed ? 'Storniert, E-Mail an den Gast wird gesendet' : 'Storniert'); after(j); });
     });
     var form = $('form', dlg);
     var drawPick = function () {
@@ -504,9 +523,9 @@
       data.tables = sel;
       if (r) { data.id = r.id; data.source = r.source; }
       var send = function (force) {
-        data.force = force;
+        data.force = force; data._day = data.date;
         api('POST', data).then(function (j) {
-          if (j.ok) { dlg.close(); toast(r ? 'Gespeichert' : (j.mailed ? 'Eingetragen, Bestätigung wird per E-Mail gesendet' : 'Eingetragen')); load(data.date); return; }
+          if (j.ok) { dlg.close(); toast(r ? 'Gespeichert' : (j.mailed ? 'Eingetragen, Bestätigung wird per E-Mail gesendet' : 'Eingetragen')); after(j, data.date); return; }
           if (j.over) {
             var btn = $('button[type=submit]', dlg); showErr(dlg, j.message);
             btn.textContent = 'Trotzdem eintragen'; btn.onclick = function (ev) { ev.preventDefault(); send(true); };
@@ -589,7 +608,7 @@
         var n = { week: week, closed_dates: closed, online_enabled: form.online_enabled.checked };
         ['seats', 'online_seats', 'max_online', 'duration', 'interval', 'cutoff_hours', 'days_ahead'].forEach(function (k) { n[k] = parseInt(form[k].value, 10); });
         n.notify_email = form.notify_email.value;
-        api('POST', { action: 'settings', settings: n }).then(function (r) { if (r.ok) { dlg.close(); toast('Einstellungen gespeichert'); load(); } else showErr(dlg, r.message || 'Fehler'); });
+        api('POST', { action: 'settings', settings: n }).then(function (r) { if (r.ok) { dlg.close(); toast('Einstellungen gespeichert'); after(r); } else showErr(dlg, r.message || 'Fehler'); });
       });
     });
   }
@@ -936,7 +955,7 @@
         var r = d.items.filter(function (x) { return x.id === +b.dataset.cand; })[0];
         api('POST', { action: 'assign', id: r.id, tables: [tid] }).then(function (j) {
           if (!j.ok) { showErr(dlg, j.message || 'Zuweisen fehlgeschlagen.'); return; }
-          dlg.close(); toast('Tisch ' + t.name + ': ' + r.name); load();
+          dlg.close(); toast('Tisch ' + t.name + ': ' + r.name); after(j);
         });
       });
     });
@@ -949,7 +968,7 @@
     if (i >= 0) tables.splice(i, 1); else tables.push(tid);
     api('POST', { action: 'assign', id: r.id, tables: tables }).then(function (j) {
       if (!j.ok) { toast(j.message || 'Geht nicht'); return; }
-      load();
+      after(j);
     });
   }
 
@@ -971,7 +990,7 @@
     }
     if (act === 'assigndone') { S.assign = null; render(); return true; }
     if (act === 'autoassign') {
-      api('POST', { action: 'auto_assign', date: S.date }).then(function (j) { toast(j.message || 'Fertig'); load(); });
+      api('POST', { action: 'auto_assign', date: S.date }).then(function (j) { toast(j.message || 'Fertig'); after(j); });
       return true;
     }
     if (act === 'editplan') { S.edit = JSON.parse(JSON.stringify(S.data.plan)); S.sel = null; S.assign = null; render(); return true; }
@@ -991,7 +1010,7 @@
     if (act === 'saveplan') {
       api('POST', { action: 'plan_save', plan: S.edit }).then(function (j) {
         if (!j.ok) { toast(j.message || 'Speichern fehlgeschlagen'); return; }
-        S.edit = null; S.sel = null; toast('Tischplan gespeichert'); load();
+        S.edit = null; S.sel = null; toast('Tischplan gespeichert'); after(j);
       });
       return true;
     }
@@ -1145,7 +1164,12 @@
       S.view = 'plan'; S.assign = pr.id; S.planTime = best || null;
       render(); window.scrollTo(0, 0); return;
     }
-    if (t.dataset.here) { api('POST', { action: 'status', id: parseInt(t.dataset.here, 10), status: 'erschienen' }).then(function () { load(); }); return; }
+    if (t.dataset.here) {
+      var hid = parseInt(t.dataset.here, 10), hr = S.data.items.filter(function (x) { return x.id === hid; })[0];
+      if (hr) { hr.status = 'erschienen'; render(); }
+      api('POST', { action: 'status', id: hid, status: 'erschienen' }).then(function (j) { after(j); }).catch(function () { load(); });
+      return;
+    }
     if (t.dataset.day && !act) { load(t.dataset.day); return; }
     if (act !== 'menu' && S.menu) S.menu = false;
     if (act === 'prev') load(addDays(S.date, -1));

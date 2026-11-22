@@ -35,10 +35,12 @@ if ($valid) {
             return $d['items'][$i];
         });
         if ($r && !empty($r['_changed'])) {           // E-Mails erst nach Freigabe der Sperre
-            rv_mail_owner($r, 'Storniert vom Gast');
-            rv_mail_guest_cancel($r);
-            rv_push_notify('storno', 'Storniert vom Gast', rv_date_de($r['date']) . ', ' . $r['time'] . ' Uhr · ' . (int)$r['persons'] . ' P. · ' . $r['name'],
-                '/reservierungen/verwaltung/?day=' . $r['date']);
+            rv_queue('push', ['kind' => 'storno', 'title' => 'Storniert vom Gast',
+                'body' => rv_date_de($r['date']) . ', ' . $r['time'] . ' Uhr · ' . (int)$r['persons'] . ' P. · ' . $r['name'],
+                'url' => '/reservierungen/verwaltung/?day=' . $r['date']]);
+            rv_queue('owner', ['r' => $r, 'what' => 'Storniert vom Gast']);
+            rv_queue('guest_cancel', ['r' => $r]);
+            $kick = true;
         }
         if ($r) $msg = 'Ihre Reservierung wurde storniert. Danke, dass Sie Bescheid gegeben haben!';
     } else {
@@ -58,6 +60,7 @@ h1{font:600 24px/1.25 Georgia,serif;margin:0 0 12px}
 button{font:inherit;font-weight:700;border:0;border-radius:999px;padding:14px 20px;background:#A6452F;color:#fff;width:100%;cursor:pointer;min-height:48px}
 a{color:#3D5C15}.ok{color:#2F5A12;font-weight:700}.muted{color:#6E6E66;font-size:14px}
 </style></head><body><main>
+<?php if (!empty($kick)): ?><img src="/api/queue.php" alt="" width="1" height="1" style="position:absolute;opacity:0;pointer-events:none"><?php endif; ?>
 <h1>Ihre Reservierung</h1>
 <?php if (!$r): ?>
   <p>Diese Reservierung haben wir nicht gefunden. Vielleicht ist der Link unvollständig oder der Termin liegt schon länger zurück.</p>

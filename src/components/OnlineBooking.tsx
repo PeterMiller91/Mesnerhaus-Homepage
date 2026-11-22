@@ -111,7 +111,13 @@ export default function OnlineBooking() {
         body: JSON.stringify({ date: day, time, persons, name, phone, email, note, website: hp, elapsed: Date.now() - started.current }),
       });
       const j = await r.json();
-      if (j.ok) setDone({ message: j.message, mailed: !!j.mailed });
+      if (j.ok) {
+        setDone({ message: j.message, mailed: !!j.mailed });
+        // E-Mails und Push im Hintergrund verschicken lassen (der Gast wartet nicht darauf)
+        if (j.queue) {
+          try { if (!navigator.sendBeacon?.("/api/queue.php")) void fetch("/api/queue.php", { method: "POST", keepalive: true }); } catch { /* egal */ }
+        }
+      }
       else {
         setError(j.message || "Das hat leider nicht geklappt. Bitte rufen Sie uns an.");
         if (j.full) setSlots((s) => s?.map((x) => (x.time === time ? { ...x, free: false } : x)) ?? null);
