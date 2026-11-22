@@ -465,7 +465,7 @@
       var b = e.currentTarget;
       if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Wirklich stornieren?'; return; }
       var notify = !!$('[data-notify]', dlg) && $('[data-notify]', dlg).checked;
-      api('POST', { action: 'status', id: r.id, status: 'storniert', notify: notify }).then(function (j) { dlg.close(); toast(j.mailed ? 'Storniert, Gast informiert' : 'Storniert'); load(); });
+      api('POST', { action: 'status', id: r.id, status: 'storniert', notify: notify }).then(function (j) { dlg.close(); toast(j.mailed ? 'Storniert, E-Mail an den Gast wird gesendet' : 'Storniert'); load(); });
     });
     var form = $('form', dlg);
     var drawPick = function () {
@@ -506,7 +506,7 @@
       var send = function (force) {
         data.force = force;
         api('POST', data).then(function (j) {
-          if (j.ok) { dlg.close(); toast(r ? 'Gespeichert' : (j.mailed ? 'Eingetragen, Bestätigung verschickt' : 'Eingetragen')); load(data.date); return; }
+          if (j.ok) { dlg.close(); toast(r ? 'Gespeichert' : (j.mailed ? 'Eingetragen, Bestätigung wird per E-Mail gesendet' : 'Eingetragen')); load(data.date); return; }
           if (j.over) {
             var btn = $('button[type=submit]', dlg); showErr(dlg, j.message);
             btn.textContent = 'Trotzdem eintragen'; btn.onclick = function (ev) { ev.preventDefault(); send(true); };

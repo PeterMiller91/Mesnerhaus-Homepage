@@ -72,7 +72,7 @@ function shell(string $title, string $body, bool $app = false): void {
        . '<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="/icon.svg" type="image/svg+xml">'
        . '<link rel="apple-touch-icon" href="/apple-icon.png"><meta name="apple-mobile-web-app-title" content="Reservierungen">'
        . '<title>' . h($title) . '</title><link rel="stylesheet" href="app.css?v=7"></head><body>' . $body
-       . ($app ? '<script src="app.js?v=7"></script>' : '') . '</body></html>';
+       . ($app ? '<script src="app.js?v=8"></script>' : '') . '</body></html>';
 }
 
 if (!$me) {

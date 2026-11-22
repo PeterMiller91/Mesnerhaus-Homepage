@@ -529,6 +529,8 @@ function rv_push_notify(string $kind, string $title, string $body, string $url =
 
 /* Antwort an den Browser sofort abschließen, danach E-Mails/Push verschicken (schnellere Buchung). */
 function rv_finish_response(string $json, int $code = 200): void {
+    // Sitzung freigeben, sonst wartet die nächste Anfrage desselben Geräts auf den Mailversand
+    if (session_status() === PHP_SESSION_ACTIVE) session_write_close();
     http_response_code($code);
     header('Content-Length: ' . strlen($json));
     header('Connection: close');

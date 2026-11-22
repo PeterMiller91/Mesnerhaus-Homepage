@@ -220,9 +220,11 @@ if ($act === 'save') {
     if (isset($res['warn'])) out(409, ['ok' => false, 'over' => true, 'message' => 'Zu dieser Zeit sind nur noch ' . $res['warn'] . ' Plätze frei. Trotzdem eintragen?']);
     if (!empty($res['missing'])) out(404, ['ok' => false, 'message' => 'Reservierung nicht gefunden.']);
     if (!empty($res['fail'])) out(500, ['ok' => false, 'message' => 'Speichern fehlgeschlagen.']);
-    $mailed = false;
-    if ($res['new'] && !empty($in['send_mail']) && $res['item']['email'] !== '') $mailed = rv_mail_guest_confirm($res['item']);
-    out(200, ['ok' => true, 'id' => $res['item']['id'], 'mailed' => $mailed]);
+    // Erst antworten, dann die E-Mail senden (SMTP dauert oft mehrere Sekunden; Ergebnis steht im Mail-Protokoll)
+    $sendMail = $res['new'] && !empty($in['send_mail']) && $res['item']['email'] !== '';
+    rv_finish_response((string)json_encode(['ok' => true, 'id' => $res['item']['id'], 'mailed' => $sendMail], JSON_UNESCAPED_UNICODE));
+    if ($sendMail) rv_mail_guest_confirm($res['item']);
+    exit;
 }
 
 if ($act === 'push_subscribe') {
@@ -326,8 +328,10 @@ if ($act === 'status') {
         }
         return null;
     });
-    $mailed = $item && $status === 'storniert' && !empty($in['notify']) && rv_mail_guest_cancel($item);
-    out($item ? 200 : 404, ['ok' => (bool)$item, 'mailed' => $mailed]);
+    $sendMail = $item && $status === 'storniert' && !empty($in['notify']) && ($item['email'] ?? '') !== '';
+    rv_finish_response((string)json_encode(['ok' => (bool)$item, 'mailed' => $sendMail], JSON_UNESCAPED_UNICODE), $item ? 200 : 404);
+    if ($sendMail) rv_mail_guest_cancel($item);
+    exit;
 }
 
 if ($act === 'seen') {
