@@ -117,3 +117,7 @@ body {
 .legal strong { color: var(--color-dark); }
 .legal .box { background: var(--color-brand-pale); border: 1px solid var(--color-brand-light); border-radius: 1rem; padding: 1rem 1.25rem; margin: 1rem 0 1.25rem; }
 .legal .toc { columns: 2 16rem; margin-bottom: 2rem; }
+
+/* Vorgerendertes Cookie-Banner: nur sichtbar, wenn das Inline-Skript html.cb-show gesetzt hat */
+[data-cb-pre] { display: none; }
+.cb-show [data-cb-pre] { display: block; }

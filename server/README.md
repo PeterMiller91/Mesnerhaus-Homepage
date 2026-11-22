@@ -88,3 +88,11 @@ Der Webhook `/api/telegram-tageskarte.php` funktioniert weiterhin, wenn `telegra
 https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://landing.mesnerhausarmesberg.de/api/telegram-tageskarte.php&secret_token=<SECRET>&allowed_updates=["message"]
 ```
 Befehle: Foto/PDF senden, `/status`, `/loeschen`, `/start` (zeigt die Chat-ID).
+
+## Browser-Cache und Komprimierung
+
+`public/.htaccess` (landet beim Build in `out/.htaccess`) setzt die Cache-Zeiten für Apache:
+Next.js-Dateien unter `/_next/static/` 1 Jahr (`immutable`, Dateinamen enthalten einen Hash),
+Bilder/Schriften 30 Tage, HTML-Seiten `no-cache`; dazu gzip für Text-Dateien.
+Falls nach einem Pull die Seite einen 500-Fehler zeigt, erlaubt der Server diese Anweisungen nicht:
+dann `out/.htaccess` löschen und Bescheid geben.

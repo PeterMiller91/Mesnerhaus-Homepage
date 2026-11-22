@@ -28,14 +28,18 @@ export default function CookieBanner() {
     if (visible) dialog.current?.focus();
   }, [visible]);
 
-  if (consent === undefined || !visible) return null;
+  /* Statisch vorgerendert (consent noch unbekannt): Banner steht schon im HTML, damit es sofort
+     erscheint und nicht erst nach dem JavaScript. Ein kleines Inline-Skript in layout.tsx setzt
+     html.cb-show, wenn noch keine Entscheidung gespeichert ist; sonst bleibt es per CSS verborgen. */
+  const pre = consent === undefined;
+  if (!pre && !visible) return null;
 
   const mapsChecked = forced && !details ? (consent?.maps ?? false) : maps;
   const save = (m: boolean) => { writeConsent({ maps: m }); setForced(false); setDetails(false); };
   const openDetails = () => { setMaps(consent?.maps ?? false); setDetails(true); };
 
   return (
-    <div className="fixed inset-x-0 bottom-0 z-[200] p-3 sm:p-5 pointer-events-none"
+    <div data-cb-pre={pre ? "" : undefined} className="fixed inset-x-0 bottom-0 z-[200] p-3 sm:p-5 pointer-events-none"
       style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
       <div ref={dialog} tabIndex={-1} role="dialog" aria-modal="false" aria-labelledby="cb-title" aria-describedby="cb-text"
         className="pointer-events-auto mx-auto max-w-2xl bg-white text-[var(--color-dark)] rounded-2xl border border-[var(--color-line)] shadow-[0_12px_48px_rgba(0,0,0,.22)] p-5 sm:p-6 outline-none max-h-[85vh] overflow-y-auto">

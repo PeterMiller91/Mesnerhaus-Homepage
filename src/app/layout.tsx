@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Great_Vibes, Playfair_Display, Lato } from "next/font/google";
 import "./globals.css";
 import CookieBanner from "@/components/CookieBanner";
+import { CONSENT_VERSION } from "@/lib/consent";
 import { SITE_URL } from "@/data/site";
 
 const greatVibes = Great_Vibes({
@@ -53,10 +54,13 @@ export default function RootLayout({
 }) {
   return (
     <html
+      suppressHydrationWarning
       lang="de"
       className={`${greatVibes.variable} ${playfair.variable} ${lato.variable}`}
     >
       <body className="min-h-full flex flex-col">
+        {/* Cookie-Banner sofort zeigen, wenn noch keine Entscheidung gespeichert ist (vor dem JavaScript) */}
+        <script dangerouslySetInnerHTML={{ __html: `try{var c=JSON.parse(localStorage.getItem("mh-consent")||"null");if(!c||c.v!==${CONSENT_VERSION})document.documentElement.classList.add("cb-show")}catch(e){document.documentElement.classList.add("cb-show")}` }} />
         {children}
         <CookieBanner />
       </body>

@@ -80,17 +80,17 @@ const benefits: { icon: IconName; title: string; body: string }[] = [
 
 type GalleryItem = { base: string; src: { small: number; large?: number }; alt: string; caption: string; wide?: boolean; pos?: string };
 const gallery: GalleryItem[] = [
-  { base: "panorama",        src: { small: 900, large: 1400 }, wide: true, alt: "Landschaft rund um den Armesberg", caption: "Die Landschaft rund um den Armesberg" },
-  { base: "gaststube-ecke",  src: { small: 387 },              alt: "Gemütliche Ecke in der Gaststube mit Kerze und Blumen", caption: "Gemütlich in der Gaststube" },
-  { base: "krustenbraten",   src: { small: 480, large: 800 },  alt: "Schweinebraten mit knuspriger Kruste", caption: "Schweinebraten mit Kruste" },
-  { base: "braten-knoedel",  src: { small: 480, large: 800 },  alt: "Braten mit Soße, Kartoffelknödeln und Blaukraut", caption: "Braten mit Knödeln und Blaukraut" },
-  { base: "terrasse",        src: { small: 480, large: 800 },  alt: "Terrasse des Mesnerhaus mit Blick ins Land", caption: "Die Terrasse, zum Teil überdacht" },
-  { base: "salat",           src: { small: 480, large: 800 },  alt: "Bunter Salatteller mit Ei, Karotten und Radieschen", caption: "Frischer Salatteller" },
-  { base: "kuechle",         src: { small: 480, large: 800 },  alt: "Selbstgebackene Küchle", caption: "Selbstgebackene Küchle" },
-  { base: "eisbecher",       src: { small: 480, large: 800 },  alt: "Eisbecher mit Karamell und Waffel", caption: "Eisbecher mit Karamell", pos: "center 35%" },
-  { base: "abend",           src: { small: 480, large: 800 },  alt: "Abendstimmung am Armesberg", caption: "Abendstimmung am Armesberg", pos: "center 40%" },
-  { base: "essen1",          src: { small: 480, large: 800 },  alt: "Hausgemachtes Gericht mit Bratkartoffeln und Salat", caption: "Frisch gekocht, von Hand" },
-  { base: "essen2",          src: { small: 480, large: 800 },  alt: "Braten mit Bratkartoffeln", caption: "Braten mit Bratkartoffeln" },
+  { base: "panorama",        src: { small: 480, large: 900 }, wide: true, alt: "Landschaft rund um den Armesberg", caption: "Die Landschaft rund um den Armesberg" },
+  { base: "gaststube-ecke",  src: { small: 360, large: 387 }, alt: "Gemütliche Ecke in der Gaststube mit Kerze und Blumen", caption: "Gemütlich in der Gaststube" },
+  { base: "krustenbraten",   src: { small: 360, large: 800 },  alt: "Schweinebraten mit knuspriger Kruste", caption: "Schweinebraten mit Kruste" },
+  { base: "braten-knoedel",  src: { small: 360, large: 800 },  alt: "Braten mit Soße, Kartoffelknödeln und Blaukraut", caption: "Braten mit Knödeln und Blaukraut" },
+  { base: "terrasse",        src: { small: 360, large: 800 },  alt: "Terrasse des Mesnerhaus mit Blick ins Land", caption: "Die Terrasse, zum Teil überdacht" },
+  { base: "salat",           src: { small: 360, large: 800 },  alt: "Bunter Salatteller mit Ei, Karotten und Radieschen", caption: "Frischer Salatteller" },
+  { base: "kuechle",         src: { small: 360, large: 800 },  alt: "Selbstgebackene Küchle", caption: "Selbstgebackene Küchle" },
+  { base: "eisbecher",       src: { small: 360, large: 800 },  alt: "Eisbecher mit Karamell und Waffel", caption: "Eisbecher mit Karamell", pos: "center 35%" },
+  { base: "abend",           src: { small: 360, large: 800 },  alt: "Abendstimmung am Armesberg", caption: "Abendstimmung am Armesberg", pos: "center 40%" },
+  { base: "essen1",          src: { small: 360, large: 800 },  alt: "Hausgemachtes Gericht mit Bratkartoffeln und Salat", caption: "Frisch gekocht, von Hand" },
+  { base: "essen2",          src: { small: 360, large: 800 },  alt: "Braten mit Bratkartoffeln", caption: "Braten mit Bratkartoffeln" },
 ];
 
 const faqs = [
@@ -173,7 +173,7 @@ export default function Home() {
                 <source media="(min-width:1400px)" srcSet="/images/panorama-1920.webp" />
                 <source media="(min-width:900px)"  srcSet="/images/panorama-1400.webp" />
                 <source media="(min-width:480px)"  srcSet="/images/panorama-900.webp"  />
-                <img src="/images/panorama-480.webp" alt="" className="w-full h-full object-cover object-center" fetchPriority="high" />
+                <img src="/images/panorama-480.webp" alt="" className="w-full h-full object-cover object-center" fetchPriority="high" width={480} height={183} />
               </picture>
             </ParallaxBg>
           </div>
@@ -333,7 +333,7 @@ export default function Home() {
                         {src.large && <source media="(min-width:600px)" srcSet={`/images/${base}-${src.large}.webp`} />}
                         <img src={`/images/${base}-${src.small}.webp`} alt={alt}
                           className="w-full h-full object-cover" style={pos ? { objectPosition: pos } : undefined}
-                          loading="lazy" width={480} height={480} />
+                          loading="lazy" width={wide ? 480 : 360} height={wide ? 270 : 360} />
                       </picture>
                     </div>
                     <figcaption className="mt-2 text-xs md:text-sm text-[var(--color-mid)] text-center">{caption}</figcaption>
@@ -373,7 +373,7 @@ export default function Home() {
               <picture>
                 <source media="(min-width:800px)" srcSet="/images/abend-1200.webp" />
                 <source media="(min-width:480px)" srcSet="/images/abend-800.webp" />
-                <img src="/images/abend-480.webp" alt="" className="w-full h-full object-cover object-[center_40%]" loading="lazy" />
+                <img src="/images/abend-480.webp" alt="" className="w-full h-full object-cover object-[center_40%]" loading="lazy" width={480} height={360} />
               </picture>
             </ParallaxBg>
           </div>
