@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { TEL_DISPLAY, TEL_HREF } from "@/data/site";
 import Image from "next/image";
 
@@ -15,9 +16,15 @@ const links = [
 export default function MobileMenu({ scrolled = false }: { scrolled?: boolean }) {
   const [open, setOpen] = useState(false);
 
+  // Menü direkt in <body> rendern: Die Kopfleiste hat einen Weichzeichner (backdrop-filter),
+  // der sonst „fixed“-Elemente auf ihre eigene Höhe beschränkt (Menü wäre nach dem Scrollen durchsichtig).
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
+
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    if (open) window.addEventListener("keydown", onKey);
+    return () => { document.body.style.overflow = ""; window.removeEventListener("keydown", onKey); };
   }, [open]);
 
   return (
@@ -32,6 +39,7 @@ export default function MobileMenu({ scrolled = false }: { scrolled?: boolean })
         <span className={`block w-4 h-0.5 transition-colors duration-300 ${scrolled ? "bg-[var(--color-dark)]" : "bg-white"}`} />
       </button>
 
+      {mounted && createPortal(<>
       {/* backdrop */}
       <div
         onClick={() => setOpen(false)}
@@ -108,6 +116,7 @@ export default function MobileMenu({ scrolled = false }: { scrolled?: boolean })
           </a>
         </div>
       </div>
+      </>, document.body)}
     </>
   );
 }

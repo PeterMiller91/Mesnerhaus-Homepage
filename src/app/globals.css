@@ -121,3 +121,6 @@ body {
 /* Vorgerendertes Cookie-Banner: nur sichtbar, wenn das Inline-Skript html.cb-show gesetzt hat */
 [data-cb-pre] { display: none; }
 .cb-show [data-cb-pre] { display: block; }
+
+/* Ausgeblendetes Handy-Menü (rechts außerhalb) darf die Seite nicht verbreitern */
+html, body { overflow-x: clip; }

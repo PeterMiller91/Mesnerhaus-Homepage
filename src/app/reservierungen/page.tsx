@@ -36,7 +36,7 @@ export default function Reservieren() {
             Tisch reservieren
           </h1>
           <p className="text-[var(--color-mid)] max-w-2xl mb-8 md:mb-10 leading-relaxed">
-            Wählen Sie Personenzahl, Tag und Uhrzeit. Ist Platz frei, ist Ihr Tisch sofort reserviert und Sie erhalten eine Bestätigung per E-Mail.
+            Ihr Sonntag auf dem Armesberg in drei Schritten: Personen, Tag und Uhrzeit wählen. Ist Platz frei, ist Ihr Tisch sofort reserviert, die Bestätigung kommt per E-Mail.
           </p>
 
           <div className="grid lg:grid-cols-[minmax(0,1fr)_300px] gap-6 md:gap-8 items-start">

@@ -52,28 +52,28 @@ function Wave({ from, to }: { from: string; to: string }) {
 const stats = [
   { value: "731 m",          label: "Weitblick über die Oberpfalz" },
   { value: "Über\n20 Jahre", label: "Familienbetrieb" },
-  { value: "Haus\u00ADgemacht", label: "Küche & Kuchen" },
+  { value: "Selbst\u00ADgebacken", label: "Kuchen & Torten" },
 ];
 
 const benefits: { icon: IconName; title: string; body: string }[] = [
   {
     icon: "mountain",
-    title: "Weitblick über die Oberpfalz",
-    body: "Von der Terrasse und aus dem Biergarten schauen Sie auf 731 Metern weit über das Land. Ein Teil der Terrasse ist überdacht.",
+    title: "Ein Blick weit über die Oberpfalz",
+    body: "Auf 731 Metern sitzen Sie auf der Terrasse oder im Biergarten mit freier Sicht ins Land. Kommt ein Schauer, ist ein Teil der Terrasse überdacht.",
   },
   {
     icon: "plate",
-    title: "Aus der eigenen Küche",
-    body: "Gekocht wird bei uns im Haus, bodenständig und mit Liebe. Die Tageskarte wechselt jede Woche.",
+    title: "Bayerisch und bodenständig",
+    body: "Braten, Knödel, Wild und Fisch, gekocht in unserer Küche. Die Tageskarte wechselt jede Woche, ein vegetarisches Gericht ist in der Regel dabei.",
   },
   {
     icon: "cake",
-    title: "Selbstgebackene Kuchen",
-    body: "Torten, Küchle und Hefebuchteln aus der eigenen Küche. In unseren Google-Bewertungen werden sie besonders oft gelobt.",
+    title: "Kuchen, selbst gebacken",
+    body: "Torten, Küchle und Hefebuchteln backen wir selbst. In ihren Google-Bewertungen loben Gäste sie immer wieder.",
   },
   {
     icon: "parking",
-    title: "Einfach ankommen",
+    title: "Ankommen ohne Suchen",
     body: "Kostenloser Parkplatz direkt am Haus, Fahrradständer und Wanderwege ab der Tür. Hunde sind drinnen und draußen willkommen.",
   },
 ];
@@ -198,7 +198,7 @@ export default function Home() {
           </div>
           <p className="hero-claim text-base md:text-xl text-white/80 italic max-w-[22rem] md:max-w-xl text-balance mb-9 md:mb-11"
             style={{ fontFamily: "var(--font-playfair)" }}>
-            Bodenständige Küche, selbstgebackene Kuchen und Weitblick.<br />Jeden Sonntag von 11 bis 17 Uhr.
+            Bayerische Küche, selbstgebackene Kuchen und ein Blick weit über die Oberpfalz.<br />Jeden Sonntag von 11 bis 17 Uhr.
           </p>
           <div className="hero-claim flex flex-wrap justify-center gap-2.5 -mt-4 mb-8 md:mb-10">
             <OpenStatus />
@@ -272,10 +272,10 @@ export default function Home() {
               </ScrollReveal>
               <ScrollReveal delay={220}><Divider /></ScrollReveal>
               <ScrollReveal delay={300} className="mt-5 space-y-4 text-[var(--color-mid)] leading-relaxed text-sm md:text-base">
-                <p>Das Mesnerhaus liegt direkt unterhalb der Wallfahrtskirche zur Heiligen Dreifaltigkeit, auf 731 Metern, mit weitem Blick über die Oberpfalz. Seit über 20 Jahren führen wir es als Familienbetrieb.</p>
-                <p>Gekocht wird bei uns im Haus. Zum Kaffee gibt es selbstgebackene Kuchen und Torten.</p>
+                <p>Oben am Armesberg, direkt unterhalb der Wallfahrtskirche zur Heiligen Dreifaltigkeit, steht das Mesnerhaus. Auf 731 Metern schauen Sie von hier weit über die Oberpfalz. Seit über 20 Jahren führen wir das Haus als Familie.</p>
+                <p>Mittags kochen wir bayerisch und bodenständig, am Nachmittag gibt es Kaffee mit selbstgebackenen Kuchen und Torten. Wanderer, Radfahrer, Familien und Hunde sind bei uns gleichermaßen willkommen.</p>
                 <blockquote className="border-l-2 border-[var(--color-brand)] pl-4 italic">
-                  „Das Essen war einfach der Hammer. Sehr lecker, wie bei Oma. Portionen sind ausreichend und die Preise sind sehr fair.“
+                  „Das Essen war einfach der Hammer. […] Portionen sind ausreichend und die Preise sind sehr fair.“
                   <footer className="not-italic text-xs text-[var(--color-muted)] mt-1.5">Matthias G., Google-Bewertung</footer>
                 </blockquote>
               </ScrollReveal>
@@ -356,7 +356,7 @@ export default function Home() {
               </ScrollReveal>
               <ScrollReveal delay={180}>
                 <p className="text-[var(--color-mid)] max-w-lg mx-auto mt-3 text-sm md:text-base">
-                  Bodenständige bayerische Küche aus unserer eigenen Küche. Typisch bei uns: Braten, Wild, Fisch und selbstgebackene Kuchen. Die Karte wechselt jede Woche.
+                  Was diesen Sonntag gekocht wird, sehen Sie hier. Typisch bei uns: Braten, Wild und Fisch, dazu am Nachmittag selbstgebackene Kuchen. Die Karte wechselt jede Woche.
                 </p>
               </ScrollReveal>
             </div>
@@ -490,7 +490,7 @@ export default function Home() {
                     "Bis zu 60 Gäste, Gasträume exklusiv",
                     "Auch außerhalb der Öffnungszeiten nach Absprache",
                     "Menü nach Ihren Wünschen",
-                    "Kaffee und hausgemachte Kuchen für den Nachmittag",
+                    "Kaffee und selbstgebackene Kuchen für den Nachmittag",
                   ].map((item) => (
                     <li key={item} className="flex items-start gap-2.5 text-sm md:text-base text-[var(--color-mid)]">
                       <svg width="16" height="16" viewBox="0 0 20 20" fill="none" className="mt-0.5 shrink-0 text-[var(--color-brand)]">
@@ -521,12 +521,12 @@ export default function Home() {
               <ScrollReveal><SectionLabel>Ausflug & Wandern</SectionLabel></ScrollReveal>
               <ScrollReveal delay={100}>
                 <h2 className="text-3xl md:text-4xl text-[var(--color-dark)]" style={{ fontFamily: "var(--font-playfair)" }}>
-                  Der perfekte Ausflugstag
+                  Wandern, Kirche, Einkehr: Ihr Ausflug auf den Armesberg
                 </h2>
               </ScrollReveal>
               <ScrollReveal delay={180}>
                 <p className="text-[var(--color-mid)] max-w-xl mx-auto mt-3 text-sm md:text-base">
-                  Wandern Sie auf den Armesberg und kehren Sie danach bei uns ein. Diese Dinge erwarten Sie vor Ort.
+                  Erst hinauf zur Wallfahrtskirche, dann auf die Terrasse. Das erwartet Sie oben.
                 </p>
               </ScrollReveal>
             </div>
@@ -677,11 +677,11 @@ export default function Home() {
                 Tisch reservieren
               </h2>
               <p className="text-sm text-[var(--color-mid)] mb-6 leading-relaxed">
-                Online in einer Minute: Tag und Uhrzeit wählen, und ist Platz frei, ist Ihr Tisch sofort reserviert. Bis 8 Personen online, größere Gruppen bitte per Telefon oder WhatsApp.
+                Tag und Uhrzeit wählen: Ist Platz frei, ist Ihr Tisch sofort reserviert. Online bis 8 Personen, größere Gruppen bitte per Telefon oder WhatsApp.
               </p>
               <div className="p-5 md:p-6 rounded-2xl bg-[var(--color-brand-pale)] border border-[var(--color-brand-light)] grid gap-4">
                 <ul className="grid gap-2 text-sm text-[var(--color-mid)]">
-                  {["Freie Zeiten auf einen Blick", "Sofortige Bestätigung per E-Mail", "Kostenlos, Storno jederzeit per Link"].map((t) => (
+                  {["Freie Zeiten auf einen Blick", "Bestätigung sofort, dazu per E-Mail", "Kostenlos, absagen per Link in der E-Mail"].map((t) => (
                     <li key={t} className="flex items-center gap-2.5"><Icon name="check" size={16} strokeWidth={2.4} className="text-[var(--color-brand-dark)] shrink-0" />{t}</li>
                   ))}
                 </ul>
@@ -790,7 +790,7 @@ export default function Home() {
               Diesen Sonntag auf den Armesberg?
             </h2>
             <p className="text-white/70 max-w-md mx-auto mb-8 text-sm md:text-base leading-relaxed">
-              Sonntags ist es oft voll. Reservieren Sie Ihren Tisch kostenlos online, per Anruf oder per WhatsApp.
+              Bei schönem Wetter ist es sonntags oft voll. Sichern Sie sich Ihren Tisch kostenlos: online, per Anruf oder per WhatsApp.
             </p>
             <div className="flex flex-col sm:flex-row flex-wrap gap-4 justify-center">
               <a href="/reservierungen/"
