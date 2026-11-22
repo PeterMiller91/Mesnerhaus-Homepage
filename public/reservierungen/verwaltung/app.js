@@ -4,7 +4,7 @@
   var root = document.getElementById('app');
   var boot = JSON.parse(root.getAttribute('data-boot'));
   var isAdmin = boot.user.role === 'admin';
-  var S = { date: boot.day || boot.today, data: null, menu: false, view: 'liste', planTime: null, area: null, assign: null, edit: null, sel: null, filter: 'alle', scope: 'kommend', q: '', list: null };
+  var S = { date: boot.day || boot.today, data: null, menu: false, view: 'liste', planTime: null, area: null, assign: null, edit: null, sel: null, filter: 'alle', scope: 'kommend', q: '', list: null, pickMode: false, picked: {} };
   try { var sv = localStorage.getItem('mh-view'); if (sv === 'plan' || sv === 'alle') S.view = sv; } catch { /* egal */ }
 
   /* ── Helfer ─────────────────────────────────────────────── */
@@ -23,6 +23,7 @@
     phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/>',
     msg: '<path d="M21 12a8.5 8.5 0 0 1-12.4 7.6L3 21l1.4-5.4A8.5 8.5 0 1 1 21 12z"/>', close: '<path d="M6 6l12 12M18 6L6 18"/>',
     list: '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>', grid: '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+    trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
     clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>',
     down: '<path d="M12 4v12M6 10l6 6 6-6M4 20h16"/>',
     bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0"/>'
@@ -267,8 +268,47 @@
     return api('GET', null, '?list&scope=' + S.scope + '&q=' + encodeURIComponent(S.q)).then(function (j) {
       if (my !== listReq) return;
       S.list = j;
-      var b = $('#lbody'); if (b) b.innerHTML = listBody();
-      var c = $('#lcount'); if (c) c.textContent = listCount();
+      // Auswahl auf vorhandene Einträge beschränken
+      var ids = {}; j.items.forEach(function (r) { ids[r.id] = true; });
+      Object.keys(S.picked).forEach(function (k) { if (!ids[k]) delete S.picked[k]; });
+      refreshList();
+    });
+  }
+  function refreshList() {
+    var b = $('#lbody'); if (b) b.innerHTML = listBody();
+    var c = $('#lcount'); if (c) c.textContent = listCount();
+    var bar = $('#lbar'); if (bar) bar.outerHTML = pickBar();
+  }
+  function pickedIds() { return Object.keys(S.picked).map(Number); }
+  function pickBar() {
+    if (!S.pickMode) return '<div id="lbar" hidden></div>';
+    var n = pickedIds().length, all = S.list && S.list.items.length && S.list.items.every(function (r) { return S.picked[r.id]; });
+    return '<div id="lbar" class="pickbar" role="status"><b>' + n + ' ausgewählt</b>' +
+      '<button class="btn small ghost" data-act="pickall">' + (all ? 'Keine' : 'Alle') + '</button><span class="grow"></span>' +
+      '<button class="btn small ghost" data-act="pickcancel">Abbrechen</button>' +
+      '<button class="btn small danger-solid" data-act="pickdelete"' + (n ? '' : ' disabled') + '>' + ico('trash') + 'Löschen</button></div>';
+  }
+  function confirmDelete() {
+    var ids = pickedIds(); if (!ids.length) return;
+    var rows = S.list.items.filter(function (r) { return S.picked[r.id]; });
+    var body = '<p>Diese <b>' + ids.length + (ids.length === 1 ? ' Reservierung' : ' Reservierungen') + '</b> werden endgültig gelöscht:</p>' +
+      '<ul class="del-list">' + rows.slice(0, 12).map(function (r) { return '<li>' + esc(shortDate(r.date)) + ' ' + esc(r.time) + ' · ' + esc(r.name) + ' · ' + r.persons + ' P.</li>'; }).join('') +
+      (rows.length > 12 ? '<li>… und ' + (rows.length - 12) + ' weitere</li>' : '') + '</ul>' +
+      '<p class="hint">Die Gäste werden nicht benachrichtigt. Wer nur absagen will, nutzt besser „Stornieren“ in der Reservierung.</p>' +
+      '<p class="alert err" data-step2 hidden><b>Letzte Bestätigung:</b> Das kann nicht rückgängig gemacht werden.</p>';
+    var dlg = dialog('Reservierungen löschen?', body, '<button type="button" class="btn ghost" data-close2>Abbrechen</button><button type="button" class="btn danger" data-del>Löschen</button>');
+    $('[data-close2]', dlg).addEventListener('click', function () { dlg.close(); });
+    $('[data-del]', dlg).addEventListener('click', function (e) {
+      var b = e.currentTarget;
+      if (!b.dataset.sure) {      // 1. Bestätigung → 2. Stufe
+        b.dataset.sure = '1'; b.className = 'btn danger-solid'; b.textContent = 'Endgültig löschen (' + ids.length + ')';
+        $('[data-step2]', dlg).hidden = false; return;
+      }
+      b.disabled = true;
+      api('POST', { action: 'delete', ids: ids }).then(function (j) {
+        if (!j.ok) { b.disabled = false; showErr(dlg, j.message || 'Löschen fehlgeschlagen.'); return; }
+        dlg.close(); toast(j.message); S.picked = {}; S.pickMode = false; load();
+      });
     });
   }
   function listCount() { return S.list ? S.list.items.length + (S.list.items.length === 1 ? ' Eintrag' : ' Einträge') : ''; }
@@ -276,11 +316,12 @@
     return '<section class="panel lst"><div class="lst-head"><h2>Alle Reservierungen</h2>' +
       '<div class="seg" role="group" aria-label="Zeitraum"><button data-scope="kommend" aria-pressed="' + (S.scope === 'kommend') + '">Kommend</button>' +
       '<button data-scope="vergangen" aria-pressed="' + (S.scope === 'vergangen') + '">Vergangen</button></div>' +
-      (isAdmin ? '<button class="btn small ghost" data-act="export">' + ico('down') + 'CSV exportieren</button>' : '') + '</div>' +
+      (isAdmin ? '<div class="lst-tools"><button class="btn small ghost" data-act="export">' + ico('down') + 'CSV exportieren</button>' +
+        '<button class="btn small ghost" data-act="pickmode" aria-pressed="' + S.pickMode + '">' + ico('check') + 'Auswählen</button></div>' : '') + '</div>' +
       '<div class="lst-search"><label class="sr" for="lq">Suchen</label>' + ico('search') +
       '<input id="lq" type="search" placeholder="Name, Telefon, E-Mail oder Notiz" value="' + esc(S.q) + '" autocomplete="off"><span id="lcount">' + listCount() + '</span></div>' +
       (S.scope === 'vergangen' ? '<p class="hint">Vergangene Reservierungen werden ' + 60 + ' Tage nach dem Termin automatisch gelöscht.</p>' : '') +
-      '<div id="lbody">' + listBody() + '</div></section>';
+      pickBar() + '<div id="lbody">' + listBody() + '</div></section>';
   }
   function listBody() {
     if (!S.list || S.list.scope !== S.scope) return '<p class="empty">Wird geladen …</p>';
@@ -298,7 +339,10 @@
           if (r.table) meta.push(tableText(r));
           if (r.phone) meta.push(esc(r.phone));
           if (r.note) meta.push(esc(r.note));
-          return '<button class="lst-row' + (isActive(r) ? '' : ' inactive') + '" data-open="' + r.id + '" data-day="' + esc(r.date) + '">' +
+          var on = !!S.picked[r.id];
+          return '<button class="lst-row' + (isActive(r) ? '' : ' inactive') + (S.pickMode ? ' picking' : '') + (on ? ' picked' : '') + '" ' +
+            (S.pickMode ? 'data-lpick="' + r.id + '" aria-pressed="' + on + '"' : 'data-open="' + r.id + '" data-day="' + esc(r.date) + '"') + '>' +
+            (S.pickMode ? '<span class="cb" aria-hidden="true">' + (on ? ico('check') : '') + '</span>' : '') +
             '<span class="t">' + esc(r.time) + '</span><span class="n"><b>' + esc(r.name) + (r.seen ? '' : ' <span class="badge-neu">NEU</span>') + '</b><small>' + meta.join(' · ') + '</small></span>' +
             '<span class="chip ' + esc(r.status) + '">' + esc(STATUS[r.status] || r.status) + '</span></button>';
         }).join('') + '</div>';
@@ -979,7 +1023,16 @@
     if (t.dataset.goview) { S.view = t.dataset.goview; load(t.dataset.day); return; }
     if (t.dataset.view && S.menu) S.menu = false;
     if (planClick(t, act)) return;
-    if (t.dataset.scope) { S.scope = t.dataset.scope; S.list = null; render(); return; }
+    if (t.dataset.lpick) { var pid = t.dataset.lpick; if (S.picked[pid]) delete S.picked[pid]; else S.picked[pid] = true; refreshList(); return; }
+    if (act === 'pickmode') { S.pickMode = !S.pickMode; S.picked = {}; render(); return; }
+    if (act === 'pickcancel') { S.pickMode = false; S.picked = {}; render(); return; }
+    if (act === 'pickall') {
+      var allOn = S.list.items.every(function (r) { return S.picked[r.id]; });
+      S.picked = {}; if (!allOn) S.list.items.forEach(function (r) { S.picked[r.id] = true; });
+      refreshList(); return;
+    }
+    if (act === 'pickdelete') { confirmDelete(); return; }
+    if (t.dataset.scope) { S.scope = t.dataset.scope; S.list = null; S.picked = {}; render(); return; }
     if (act === 'export') {
       var a = document.createElement('a');
       a.href = 'api.php?export&scope=' + S.scope + '&q=' + encodeURIComponent(S.q) + '&t=' + encodeURIComponent(boot.csrf);

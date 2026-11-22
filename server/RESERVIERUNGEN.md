@@ -40,6 +40,8 @@ Läuft komplett auf dem eigenen Webserver (PHP), ohne Datenbank-Server und ohne 
   Suche nach Name, Telefon, E-Mail oder Notiz, antippen öffnet die Reservierung.
   **CSV exportieren** (nur Admin) lädt die angezeigte Auswahl als Excel-taugliche CSV-Datei (Semikolon, UTF-8).
   Achtung: die Datei enthält Gästedaten, nicht weitergeben und nach Gebrauch löschen.
+  **Auswählen → Löschen** (nur Admin): Einträge antippen (oder „Alle“), „Löschen“, dann zweimal bestätigen
+  („Löschen“ und „Endgültig löschen“). Die Gäste werden nicht benachrichtigt; nicht rückgängig zu machen.
 - Handy: kompakter Kopf mit Ring und Zahlen, Leiste unten (Ablauf, Tische, +, Liste, Mehr); neue Reservierungen über die Kachel „Neu“ im Kopf.
 - Neue Online-Reservierungen zählt die Karte „Neu eingegangen“ (Handy: Glocke), bis man sie öffnet oder „Alle gesehen“ tippt.
 - **Eintragen** für Telefon, WhatsApp, E-Mail oder Gäste vor Ort. Bei Überbuchung kommt eine Warnung, „Trotzdem eintragen“ ist möglich.

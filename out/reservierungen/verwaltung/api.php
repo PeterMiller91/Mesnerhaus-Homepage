@@ -321,6 +321,21 @@ if ($act === 'seen') {
     out(200, ['ok' => true]);
 }
 
+// Reservierungen endgültig löschen (nur Admin, Liste mit Auswahl)
+if ($act === 'delete') {
+    if (!$isAdmin) out(403, ['ok' => false, 'message' => 'Löschen darf nur der Admin-Zugang.']);
+    $ids = array_values(array_unique(array_filter(array_map('intval', (array)($in['ids'] ?? [])))));
+    if (!$ids || count($ids) > 500) out(400, ['ok' => false, 'message' => 'Keine Reservierungen ausgewählt.']);
+    $n = rv_with_lock(function () use ($ids) {
+        $d = rv_load(); $before = count($d['items']);
+        $d['items'] = array_values(array_filter($d['items'], function ($r) use ($ids) { return !in_array((int)$r['id'], $ids, true); }));
+        $n = $before - count($d['items']);
+        if ($n) rv_save($d);
+        return $n;
+    });
+    out(200, ['ok' => true, 'deleted' => (int)$n, 'message' => $n === 1 ? '1 Reservierung gelöscht' : $n . ' Reservierungen gelöscht']);
+}
+
 if ($act === 'password') {
     $users = rv_users(); $u = $users[$me['id']] ?? null;
     $new = (string)($in['new'] ?? '');
