@@ -487,3 +487,21 @@ dialog.month-dlg{width:min(640px,calc(100vw - 16px))}
   .daytab.cal .cal-l{display:inline;font-size:13px;color:#fff;font-weight:700}
 }
 @media (max-width:860px){.daytab.cal{order:-1}}
+
+/* Benutzer */
+.ulist{display:grid;gap:8px}
+.urow{border:1px solid var(--line);border-radius:14px;padding:10px 12px;display:grid;gap:8px}
+.urow-top{display:flex;align-items:center;gap:10px}
+.urow-top .av{width:36px;height:36px;border-radius:999px;background:#8DB43A;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:900;flex:none}
+.urow-top .av.admin{background:#2F4A12}
+.urow-top .nm{flex:1;min-width:0}
+.urow-top .nm b{display:block}
+.urow-top .nm small{color:var(--muted)}
+.urow-acts{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.urow-acts select{padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font-weight:700;min-height:36px}
+.urow-pw{display:flex;gap:6px}
+.urow-pw input{flex:1;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:10px}
+.roles{font-size:13px;color:var(--mid);background:#FBFBF8;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:0}
+.roles b{color:var(--ink)}
+.form .urow-acts select{width:auto}
+.urow-acts{flex-wrap:nowrap}

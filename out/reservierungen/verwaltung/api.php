@@ -370,6 +370,57 @@ if ($act === 'password') {
 
 if (!$isAdmin) out(403, ['ok' => false, 'message' => 'Nur für Admins.']);
 
+/* ── Benutzer verwalten (nur Admin) ─────────────────────────────── */
+function rv_uid_from(string $name): string { $id = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $name) ?? ''); return trim($id, '-') ?: 'nutzer'; }
+function rv_admin_count(array $users): int { return count(array_filter($users, function ($u) { return ($u['role'] ?? '') === 'admin'; })); }
+function rv_user_list(): array {
+    return array_values(array_map(function ($id, $u) { return ['id' => $id, 'name' => $u['name'], 'role' => $u['role'], 'created' => $u['created'] ?? null]; }, array_keys(rv_users()), rv_users()));
+}
+if ($act === 'users') out(200, ['ok' => true, 'users' => rv_user_list(), 'me' => $me['id']]);
+
+if ($act === 'user_add') {
+    $name = rv_clean((string)($in['name'] ?? ''), 40);
+    $role = (string)($in['role'] ?? '');
+    $pass = (string)($in['password'] ?? '');
+    $len = function_exists('mb_strlen') ? mb_strlen($name) : strlen($name);
+    if ($len < 2) out(400, ['ok' => false, 'message' => 'Bitte einen Namen mit mindestens 2 Zeichen eingeben.']);
+    if (!in_array($role, ['admin', 'team'], true)) out(400, ['ok' => false, 'message' => 'Bitte eine Rolle wählen.']);
+    if (strlen($pass) < 10) out(400, ['ok' => false, 'message' => 'Das Passwort braucht mindestens 10 Zeichen.']);
+    $users = rv_users();
+    foreach ($users as $u) if (strcasecmp($u['name'], $name) === 0) out(400, ['ok' => false, 'message' => 'Diesen Namen gibt es schon. Der Name ist der Anmeldename.']);
+    $id = rv_uid_from($name); $base = $id; $i = 2;
+    while (isset($users[$id])) $id = $base . '-' . $i++;
+    $users[$id] = ['name' => $name, 'role' => $role, 'hash' => password_hash($pass, PASSWORD_DEFAULT), 'created' => date('c')];
+    if (!rv_save_users($users)) out(500, ['ok' => false, 'message' => 'Speichern fehlgeschlagen.']);
+    out(200, ['ok' => true, 'message' => $name . ' angelegt.', 'users' => rv_user_list()]);
+}
+
+if ($act === 'user_role') {
+    $users = rv_users(); $id = (string)($in['id'] ?? ''); $role = (string)($in['role'] ?? '');
+    if (!isset($users[$id])) out(404, ['ok' => false, 'message' => 'Zugang nicht gefunden.']);
+    if (!in_array($role, ['admin', 'team'], true)) out(400, ['ok' => false, 'message' => 'Unbekannte Rolle.']);
+    if ($id === $me['id'] && $role !== 'admin') out(400, ['ok' => false, 'message' => 'Die eigene Admin-Rolle kannst du nicht abgeben. Das muss ein anderer Admin machen.']);
+    if ($users[$id]['role'] === 'admin' && $role !== 'admin' && rv_admin_count($users) <= 1) out(400, ['ok' => false, 'message' => 'Es muss mindestens ein Admin bleiben.']);
+    $users[$id]['role'] = $role;
+    if (!rv_save_users($users)) out(500, ['ok' => false, 'message' => 'Speichern fehlgeschlagen.']);
+    out(200, ['ok' => true, 'message' => $users[$id]['name'] . ' ist jetzt ' . ($role === 'admin' ? 'Admin' : 'Team') . '.', 'users' => rv_user_list()]);
+}
+
+if ($act === 'user_delete') {
+    $users = rv_users(); $id = (string)($in['id'] ?? '');
+    if (!isset($users[$id])) out(404, ['ok' => false, 'message' => 'Zugang nicht gefunden.']);
+    if ($id === $me['id']) out(400, ['ok' => false, 'message' => 'Den eigenen Zugang kannst du nicht löschen.']);
+    if ($users[$id]['role'] === 'admin' && rv_admin_count($users) <= 1) out(400, ['ok' => false, 'message' => 'Es muss mindestens ein Admin bleiben.']);
+    $name = $users[$id]['name'];
+    unset($users[$id]);
+    if (!rv_save_users($users)) out(500, ['ok' => false, 'message' => 'Speichern fehlgeschlagen.']);
+    // Push-Geräte des gelöschten Zugangs entfernen
+    $subs = rv_push_subs();
+    $left = array_values(array_filter($subs, function ($x) use ($id) { return ($x['user'] ?? '') !== $id; }));
+    if (count($left) !== count($subs)) rv_push_save_subs($left);
+    out(200, ['ok' => true, 'message' => $name . ' gelöscht.', 'users' => rv_user_list()]);
+}
+
 if ($act === 'settings') {
     $n = (array)($in['settings'] ?? []);
     $int = function ($k, $min, $max) use ($n, $s) { return max($min, min($max, (int)($n[$k] ?? $s[$k]))); };

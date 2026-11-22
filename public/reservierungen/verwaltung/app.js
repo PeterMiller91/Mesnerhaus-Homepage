@@ -114,7 +114,7 @@
   function menuHtml() {
     if (!S.menu) return '';
     return '<div class="menu-list" role="menu"><div class="who">Angemeldet als <b>' + esc(boot.user.name) + '</b></div>' +
-      (isAdmin ? '<button role="menuitem" data-act="settings">Einstellungen</button><button role="menuitem" data-act="templates">E-Mail-Vorlagen</button>' : '') +
+      (isAdmin ? '<button role="menuitem" data-act="settings">Einstellungen</button><button role="menuitem" data-act="users">Benutzer</button><button role="menuitem" data-act="templates">E-Mail-Vorlagen</button>' : '') +
       '<button role="menuitem" data-act="push">Benachrichtigungen</button>' +
       '<button role="menuitem" data-act="print">Tagesliste drucken</button>' +
       '<button role="menuitem" data-act="password">Passwort ändern</button>' +
@@ -528,10 +528,6 @@
         return '<div class="wd"><label><input type="checkbox" data-wd="' + i + '"' + (d ? ' checked' : '') + '> ' + WD[i] + '</label>' +
           ['open', 'last', 'close'].map(function (k) { return '<input type="time" aria-label="' + WD[i] + ' ' + k + '" data-wdt="' + i + '-' + k + '" value="' + esc(d ? d[k] : { open: '11:00', last: '15:30', close: '17:00' }[k]) + '">'; }).join('') + '</div>';
       }).join('');
-      var users = j.users.map(function (u) {
-        return '<div class="grid2" style="align-items:end"><label>' + esc(u.name) + ' (' + (u.role === 'admin' ? 'Admin' : 'Team') + ')<input type="password" minlength="10" placeholder="Neues Passwort" data-upw="' + esc(u.id) + '" autocomplete="new-password"></label>' +
-          '<button type="button" class="btn small ghost" data-setpw="' + esc(u.id) + '">Passwort setzen</button></div>';
-      }).join('');
       var body =
         '<fieldset><legend>Online-Buchung</legend>' +
         '<label class="check"><input type="checkbox" name="online_enabled"' + (s.online_enabled ? ' checked' : '') + '> Online-Buchung auf der Website aktiv</label>' +
@@ -546,7 +542,8 @@
         '<fieldset><legend>Öffnungstage</legend><div class="week"><div class="wd head"><span></span><span>Öffnet</span><span>Letzte Ankunft</span><span>Schließt</span></div>' + wk + '</div></fieldset>' +
         '<fieldset><legend>Geschlossene Tage (Urlaub, Feiertage)</legend><div class="tags" data-closed></div>' +
         '<div class="grid2" style="align-items:end"><label>Datum<input type="date" data-addday></label><button type="button" class="btn small ghost" data-addbtn>Hinzufügen</button></div></fieldset>' +
-        '<fieldset><legend>Zugänge</legend>' + users + '</fieldset>' +
+        '<fieldset><legend>Zugänge</legend><p class="hint">Benutzer anlegen, Rollen und Passwörter: Menü → <b>Benutzer</b>.</p>' +
+        '<button type="button" class="btn small ghost" data-openusers>Benutzer verwalten</button></fieldset>' +
         '<fieldset><legend>E-Mail-Versand</legend>' +
         '<p class="hint">Versandweg: <b>' + (j.mail.mode === 'smtp' ? 'SMTP über ' + esc(j.mail.smtp_host) + ':' + j.mail.smtp_port : 'PHP mail() des Webservers') + '</b> · Absender: ' + esc(j.mail.from) + '</p>' +
         '<div class="grid2" style="align-items:end"><label>Test-E-Mail an<input type="email" data-testto value="' + esc(s.notify_email || '') + '" placeholder="deine@adresse.de"></label>' +
@@ -565,6 +562,7 @@
       drawClosed();
       $('[data-addbtn]', dlg).addEventListener('click', function () { var v = $('[data-addday]', dlg).value; if (v && closed.indexOf(v) < 0) { closed.push(v); closed.sort(); drawClosed(); } });
       $('[data-close2]', dlg).addEventListener('click', function () { dlg.close(); });
+      $('[data-openusers]', dlg).addEventListener('click', function () { dlg.close(); openUsers(); });
       $$('[data-setpw]', dlg).forEach(function (b) {
         b.addEventListener('click', function () {
           var inp = $('[data-upw="' + b.dataset.setpw + '"]', dlg);
@@ -680,6 +678,65 @@
         });
       });
       show();
+    });
+  }
+
+  /* ── Benutzer verwalten (Admin) ─────────────────────────── */
+  var ROLE = { admin: 'Admin', team: 'Team' };
+  function openUsers() {
+    var dlg = dialog('Benutzer', '<div data-ulist><p class="empty">Wird geladen …</p></div>' +
+      '<fieldset style="margin-top:14px"><legend>Neuen Benutzer anlegen</legend>' +
+      '<div class="grid2"><label>Name (Anmeldename)<input data-nname maxlength="40" autocomplete="off"></label>' +
+      '<label>Rolle<select data-nrole><option value="team">Team</option><option value="admin">Admin</option></select></label></div>' +
+      '<label>Passwort (mind. 10 Zeichen)<input type="password" data-npass minlength="10" autocomplete="new-password"></label>' +
+      '<p class="roles"><b>Team:</b> Reservierungen ansehen, eintragen, ändern, stornieren, Tische zuweisen, Liste ansehen.<br>' +
+      '<b>Admin:</b> zusätzlich Einstellungen, Benutzer, E-Mail-Vorlagen, Tischplan bearbeiten, CSV-Export und Löschen.</p>' +
+      '<button type="button" class="btn primary" data-uadd>' + ico('plus') + 'Benutzer anlegen</button></fieldset>' +
+      '<p class="alert" data-ures hidden></p>',
+      '<span style="flex:1"></span><button type="button" class="btn ghost" data-close2>Schließen</button>');
+    var res = $('[data-ures]', dlg), meId = boot.user.id;
+    var say = function (t, ok) { res.textContent = t; res.className = 'alert ' + (ok ? 'ok' : 'err'); res.hidden = false; };
+    $('[data-close2]', dlg).addEventListener('click', function () { dlg.close(); });
+    var draw = function (users) {
+      var admins = users.filter(function (u) { return u.role === 'admin'; }).length;
+      $('[data-ulist]', dlg).innerHTML = '<div class="ulist">' + users.map(function (u) {
+        var self = u.id === meId, lastAdmin = u.role === 'admin' && admins <= 1;
+        return '<div class="urow"><div class="urow-top"><span class="av' + (u.role === 'admin' ? ' admin' : '') + '" aria-hidden="true">' + esc(initial(u.name)) + '</span>' +
+          '<span class="nm"><b>' + esc(u.name) + (self ? ' (du)' : '') + '</b><small>' + ROLE[u.role] + '</small></span>' +
+          '<span class="urow-acts"><select data-role="' + esc(u.id) + '" aria-label="Rolle von ' + esc(u.name) + '"' + (self || lastAdmin ? ' disabled title="' + (self ? 'Die eigene Rolle kann nur ein anderer Admin ändern' : 'Mindestens ein Admin muss bleiben') + '"' : '') + '>' +
+            '<option value="team"' + (u.role === 'team' ? ' selected' : '') + '>Team</option><option value="admin"' + (u.role === 'admin' ? ' selected' : '') + '>Admin</option></select>' +
+            (self || lastAdmin ? '' : '<button type="button" class="btn small danger" data-udel="' + esc(u.id) + '">Löschen</button>') + '</span></div>' +
+          '<div class="urow-pw"><input type="password" minlength="10" placeholder="Neues Passwort setzen" data-upw="' + esc(u.id) + '" autocomplete="new-password" aria-label="Neues Passwort für ' + esc(u.name) + '">' +
+          '<button type="button" class="btn small ghost" data-usetpw="' + esc(u.id) + '">Setzen</button></div></div>';
+      }).join('') + '</div>';
+      $$('[data-role]', dlg).forEach(function (sel) {
+        sel.addEventListener('change', function () {
+          api('POST', { action: 'user_role', id: sel.dataset.role, role: sel.value }).then(function (j) {
+            say(j.message || 'Fehler', j.ok); if (j.users) draw(j.users); else reload();
+          });
+        });
+      });
+      $$('[data-udel]', dlg).forEach(function (b) {
+        b.addEventListener('click', function () {
+          if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = 'Wirklich löschen?'; return; }
+          api('POST', { action: 'user_delete', id: b.dataset.udel }).then(function (j) { say(j.message || 'Fehler', j.ok); if (j.users) draw(j.users); });
+        });
+      });
+      $$('[data-usetpw]', dlg).forEach(function (b) {
+        b.addEventListener('click', function () {
+          var inp = $('[data-upw="' + b.dataset.usetpw + '"]', dlg);
+          api('POST', { action: 'user_password', id: b.dataset.usetpw, new: inp.value }).then(function (j) { if (j.ok) inp.value = ''; say(j.message || 'Fehler', j.ok); });
+        });
+      });
+    };
+    var reload = function () { api('POST', { action: 'users' }).then(function (j) { if (j.ok) draw(j.users); else say(j.message || 'Fehler', false); }); };
+    reload();
+    $('[data-uadd]', dlg).addEventListener('click', function () {
+      var nm = $('[data-nname]', dlg), pw = $('[data-npass]', dlg);
+      api('POST', { action: 'user_add', name: nm.value, role: $('[data-nrole]', dlg).value, password: pw.value }).then(function (j) {
+        say(j.message || 'Fehler', j.ok);
+        if (j.ok) { nm.value = ''; pw.value = ''; draw(j.users); }
+      });
     });
   }
 
@@ -1099,6 +1156,7 @@
     else if (act === 'menu') { S.menu = !S.menu; render(); }
     else if (act === 'settings') { render(); openSettings(); }
     else if (act === 'templates') { render(); openTemplates(); }
+    else if (act === 'users') { render(); openUsers(); }
     else if (act === 'password') { render(); openPassword(); }
     else if (act === 'push') { render(); openPush(); }
     else if (act === 'logout') document.getElementById('logout').submit();

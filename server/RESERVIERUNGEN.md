@@ -52,6 +52,14 @@ Läuft komplett auf dem eigenen Webserver (PHP), ohne Datenbank-Server und ohne 
 - Die App aktualisiert sich jede Minute von selbst.
 - Bei jeder Online-Reservierung und jedem Gast-Storno kommt eine E-Mail an die Kontaktadresse (änderbar in den Einstellungen).
 
+**Benutzer (nur Admin)**
+Menü → **Benutzer**: neue Zugänge anlegen (Name = Anmeldename, Rolle, Passwort mind. 10 Zeichen),
+Rolle ändern (Team ↔ Admin), Passwort neu setzen, Zugang löschen (zweimal tippen).
+- **Team:** Reservierungen ansehen, eintragen, ändern, stornieren, Tische zuweisen, Liste ansehen.
+- **Admin:** zusätzlich Einstellungen, Benutzer, E-Mail-Vorlagen, Tischplan bearbeiten, CSV-Export, Löschen.
+Schutz: Den eigenen Zugang kann man nicht löschen oder zum Team machen, und es bleibt immer mindestens ein Admin.
+Gelöschte Zugänge sind sofort abgemeldet, ihre Push-Geräte werden entfernt.
+
 **Einstellungen (nur Admin)**
 Plätze gesamt / davon online, größte Gruppe online, Dauer pro Reservierung, Raster, Vorlauf,
 wie weit im Voraus buchbar, Öffnungstage mit letzter Ankunftszeit, geschlossene Tage (Urlaub, Feiertage),
