@@ -35,6 +35,12 @@ export default function OnlineBooking() {
   const [error, setError] = useState("");
   const [done, setDone] = useState<{ message: string; mailed: boolean } | null>(null);
   const started = useRef<number>(0);
+  const statusRef = useRef<HTMLDivElement>(null);
+  // Ladeanzeige und Bestätigung sind kürzer als das Formular: in die Mitte holen, sonst sieht man sie nicht
+  const [busyView, doneView] = [busy, !!done];
+  useEffect(() => {
+    if (busyView || doneView) statusRef.current?.scrollIntoView({ block: "center" });
+  }, [busyView, doneView]);
 
   // Tage laden (abhängig von der Personenzahl)
   useEffect(() => {
@@ -81,9 +87,22 @@ export default function OnlineBooking() {
     );
   }
 
+  if (busy) {
+    return (
+      <div ref={statusRef} className="text-center py-10 grid gap-4 justify-items-center scroll-mt-24" role="status" aria-live="polite" aria-busy="true">
+        <svg className="w-14 h-14 animate-spin motion-reduce:animate-none text-[var(--color-brand-dark)]" viewBox="0 0 50 50" aria-hidden="true">
+          <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" strokeOpacity=".18" strokeWidth="5" />
+          <path d="M25 5a20 20 0 0 1 20 20" fill="none" stroke="currentColor" strokeWidth="5" strokeLinecap="round" />
+        </svg>
+        <p className="text-lg font-bold text-[var(--color-dark)]" style={{ fontFamily: "var(--font-playfair)" }}>Ihre Reservierung wird bestätigt …</p>
+        <p className="text-sm text-[var(--color-mid)]">{shortDay(day)}, {time} Uhr · {persons} {persons === 1 ? "Person" : "Personen"}</p>
+      </div>
+    );
+  }
+
   if (done) {
     return (
-      <div className="text-center py-6 grid gap-3 justify-items-center" role="status">
+      <div ref={statusRef} className="text-center py-6 grid gap-3 justify-items-center scroll-mt-24" role="status">
         <span className="w-14 h-14 rounded-full bg-[var(--color-brand)] text-white flex items-center justify-center"><Icon name="check" size={28} strokeWidth={2.5} /></span>
         <p className="text-lg font-bold text-[var(--color-dark)]" style={{ fontFamily: "var(--font-playfair)" }}>{done.message}</p>
         <p className="text-sm text-[var(--color-mid)] max-w-sm">
@@ -105,6 +124,8 @@ export default function OnlineBooking() {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim())) { setError("Bitte eine gültige E-Mail-Adresse angeben. Dorthin schicken wir die Bestätigung."); document.getElementById("ob-mail")?.focus(); return; }
     setBusy(true);
     try {
+      // Ladeanzeige mindestens 2 Sekunden zeigen, dann die Bestätigung
+      const minWait = new Promise((res) => setTimeout(res, 2000));
       const r = await fetch(API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -112,6 +133,7 @@ export default function OnlineBooking() {
       });
       const j = await r.json();
       if (j.ok) {
+        await minWait;
         setDone({ message: j.message, mailed: !!j.mailed });
         // E-Mails und Push im Hintergrund verschicken lassen (der Gast wartet nicht darauf)
         if (j.queue) {
