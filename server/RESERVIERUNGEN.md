@@ -36,6 +36,7 @@ Läuft komplett auf dem eigenen Webserver (PHP), ohne Datenbank-Server und ohne 
 - Übersicht: Auslastung zur Spitze (Ring), Gäste mit Vergleich zum gleichen Wochentag der Vorwoche,
   Reservierungen (davon online), „Neu eingegangen“; Tagesablauf nach Uhrzeit mit Filtern (Alle, Erwartet, Da, Ohne Tisch),
   „Tisch wählen“ springt in den Tischplan; rechts „Als Nächstes“ (Anrufen/WhatsApp), Belegungskurve und Wünsche des Tages.
+- **Monatsübersicht:** Kalender-Symbol rechts in der Tagesleiste (Handy: „Monat“ ganz links). Zeigt je Tag Gäste und Auslastung, Monatssumme, Blättern per Pfeil; Tag antippen öffnet ihn. Unten Datumsfeld für jeden beliebigen Tag.
 - **Liste:** alle Reservierungen nach Datum, umschaltbar „Kommend | Vergangen“ (vergangene bis 60 Tage zurück),
   Suche nach Name, Telefon, E-Mail oder Notiz, antippen öffnet die Reservierung.
   **CSV exportieren** (nur Admin) lädt die angezeigte Auswahl als Excel-taugliche CSV-Datei (Semikolon, UTF-8).

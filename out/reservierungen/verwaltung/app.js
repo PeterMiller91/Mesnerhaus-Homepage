@@ -102,7 +102,7 @@
           '<small>' + WD[x.getDay()].slice(0, 2) + '</small><b>' + x.getDate() + '.' + (x.getMonth() + 1) + '.</b>' +
           '<i class="fillbar"><i style="width:' + (n.pct || 0) + '%"' + ((n.pct || 0) >= 85 ? ' class="hi"' : '') + '></i></i></button>';
       }).join('') +
-      '<label class="daytab cal" title="Datum wählen"><span class="sr">Datum wählen</span>' + ico('cal') + '<input type="date" id="pick" value="' + esc(d.date) + '"></label></div>';
+      '<button class="daytab cal" data-act="month" title="Monatsübersicht"><span class="sr">Monatsübersicht</span>' + ico('cal') + '<small class="cal-l">Monat</small></button></div>';
     h += '<div class="m-stats m-only">' +
       '<div><small>Gäste</small><b>' + d.stats.guests + '</b></div>' +
       '<div><small>Reserv.</small><b>' + d.stats.count + '</b></div>' +
@@ -252,7 +252,6 @@
       '<button data-act="menu" aria-expanded="' + S.menu + '">' + ico('menu') + 'Mehr</button></nav>';
     root.innerHTML = html;
 
-    $('#pick').addEventListener('change', function (e) { if (e.target.value) load(e.target.value); });
     if (S.view === 'plan') bindPlan();
     if (S.view === 'alle') {
       var lq = $('#lq'), tm = null;
@@ -347,6 +346,48 @@
             '<span class="chip ' + esc(r.status) + '">' + esc(STATUS[r.status] || r.status) + '</span></button>';
         }).join('') + '</div>';
     }).join('');
+  }
+
+  /* ── Monatsübersicht ────────────────────────────────────── */
+  var MON_SHORT = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+  function shiftMonth(ym, n) {
+    var y = +ym.slice(0, 4), m = +ym.slice(5, 7) - 1 + n;
+    y += Math.floor(m / 12); m = ((m % 12) + 12) % 12;
+    return y + '-' + ('0' + (m + 1)).slice(-2);
+  }
+  function openMonth(ym) {
+    var dlg = dialog('Monatsübersicht', '<div data-month><p class="empty">Wird geladen …</p></div>',
+      '<label class="mo-date-l">Datum<input type="date" class="mo-date" data-modate value="' + esc(S.date) + '"></label><span style="flex:1"></span><button type="button" class="btn primary" data-close2>Schließen</button>');
+    dlg.classList.add('month-dlg');
+    $('[data-close2]', dlg).addEventListener('click', function () { dlg.close(); });
+    $('[data-modate]', dlg).addEventListener('change', function (e) { if (e.target.value) { dlg.close(); load(e.target.value); } });
+    var box = $('[data-month]', dlg);
+    var show = function (ym2) {
+      api('GET', null, '?month=' + ym2).then(function (j) {
+        var y = +j.month.slice(0, 4), m = +j.month.slice(5, 7) - 1;
+        var first = (new Date(y, m, 1).getDay() + 6) % 7;   // Montag = 0
+        var cells = '';
+        for (var i = 0; i < first; i++) cells += '<span class="mo-cell pad"></span>';
+        j.days.forEach(function (x) {
+          var num = +x.date.slice(8);
+          var cls = 'mo-cell' + (x.open ? ' open' : ' shut') + (x.count ? ' has' : '') + (x.date === j.today ? ' today' : '') +
+            (x.date === S.date ? ' cur' : '') + (x.date < j.today ? ' past' : '');
+          var label = shortDate(x.date) + (x.count ? ' ' + x.count + ' Reservierungen, ' + x.guests + ' Gäste' :
+            (x.closed ? ' geschlossen (Urlaub/Feiertag)' : (x.open ? ' geöffnet, noch frei' : ' Ruhetag')));
+          cells += '<button type="button" class="' + cls + '" data-mday="' + esc(x.date) + '" aria-label="' + esc(label) + '"><b>' + num + '</b>' +
+            (x.count ? '<span class="g">' + x.guests + '<i> Gäste</i></span><span class="bar"><i style="width:' + Math.max(8, x.pct) + '%"' + (x.pct >= 85 ? ' class="hi"' : '') + '></i></span>'
+              : (x.closed ? '<span class="z">zu</span>' : '')) + '</button>';
+        });
+        box.innerHTML = '<div class="mo-head"><button type="button" class="icon-btn" data-mnav="-1" aria-label="Vorheriger Monat">' + ico('left') + '</button>' +
+          '<h3>' + MONTHS[m] + ' ' + y + '</h3><button type="button" class="icon-btn" data-mnav="1" aria-label="Nächster Monat">' + ico('right') + '</button></div>' +
+          '<p class="mo-sum">' + j.count + (j.count === 1 ? ' Reservierung' : ' Reservierungen') + ' · ' + j.guests + ' Gäste</p>' +
+          '<div class="mo-grid">' + MON_SHORT.map(function (w) { return '<span class="mo-wd">' + w + '</span>'; }).join('') + cells + '</div>' +
+          '<div class="mo-legend"><span><i class="lg-open"></i>geöffnet</span><span><i class="lg-shut"></i>Ruhetag / zu</span><span><i class="lg-bar"></i>Auslastung</span></div>';
+        $$('[data-mnav]', box).forEach(function (b) { b.addEventListener('click', function () { show(shiftMonth(j.month, +b.dataset.mnav)); }); });
+        $$('[data-mday]', box).forEach(function (b) { b.addEventListener('click', function () { dlg.close(); load(b.dataset.mday); }); });
+      });
+    };
+    show(ym);
   }
 
   function openUnseen() {
@@ -1052,7 +1093,7 @@
     if (act !== 'menu' && S.menu) S.menu = false;
     if (act === 'prev') load(addDays(S.date, -1));
     else if (act === 'next') load(addDays(S.date, 1));
-    else if (act === 'pickdate') { var p = $('#pick'); if (p.showPicker) p.showPicker(); else p.focus(); }
+    else if (act === 'month') { render(); openMonth(S.date.slice(0, 7)); }
     else if (act === 'new') { render(); openEdit(0); }
     else if (act === 'print') { render(); setTimeout(function () { window.print(); }, 50); }
     else if (act === 'menu') { S.menu = !S.menu; render(); }

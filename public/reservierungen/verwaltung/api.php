@@ -28,6 +28,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         out(200, ['ok' => true, 'available' => (bool)$keys, 'public_key' => $keys['public'] ?? '', 'devices' => $mine, 'others' => $others]);
     }
+    // Monatsübersicht: je Tag Reservierungen, Gäste, höchste Auslastung
+    if (isset($_GET['month'])) {
+        $ym = (string)$_GET['month'];
+        if (!preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $ym)) $ym = date('Y-m');
+        $all = rv_load()['items'];
+        $days = []; $sumC = 0; $sumG = 0;
+        $n = (int)date('t', strtotime($ym . '-01'));
+        for ($i = 1; $i <= $n; $i++) {
+            $d = sprintf('%s-%02d', $ym, $i);
+            $cnt = 0; $g = 0;
+            foreach ($all as $r) if ($r['date'] === $d && in_array($r['status'], RV_ACTIVE, true)) { $cnt++; $g += (int)$r['persons']; }
+            $pk = 0;
+            if ($cnt) for ($m = 600; $m < 1260; $m += 30) $pk = max($pk, rv_occupied($all, $d, $m, (int)$s['duration']));
+            $days[] = ['date' => $d, 'count' => $cnt, 'guests' => $g, 'open' => (bool)rv_day($s, $d),
+                       'closed' => in_array($d, $s['closed_dates'] ?? [], true), 'pct' => min(100, (int)round($pk / max(1, (int)$s['seats']) * 100))];
+            $sumC += $cnt; $sumG += $g;
+        }
+        out(200, ['ok' => true, 'month' => $ym, 'days' => $days, 'count' => $sumC, 'guests' => $sumG, 'today' => date('Y-m-d')]);
+    }
     // Alle Reservierungen (kommend + die letzten 60 Tage) für Liste und Suche
     if (isset($_GET['list']) || isset($_GET['export'])) {
         $today = date('Y-m-d');
