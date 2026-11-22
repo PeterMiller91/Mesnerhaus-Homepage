@@ -397,3 +397,30 @@ main.app{grid-template-columns:minmax(0,1fr);max-width:1360px;margin:0 auto;padd
   .tl-item.clash{border-color:var(--err)}
 }
 @media print{.tbl-list{display:none!important}}
+
+/* Liste: alle Reservierungen */
+.lst-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}
+.lst-head h2{flex:1 1 auto}
+.lst-search{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:999px;padding:0 16px;background:#fff;margin-bottom:8px}
+.lst-search svg{width:18px;height:18px;color:var(--muted);flex:none}
+.lst-search input{flex:1;min-width:0;border:0;background:none;padding:12px 0;font-size:16px;outline:0}
+.lst-search:focus-within{border-color:var(--brand-dark);box-shadow:0 0 0 3px var(--light)}
+.lst-search span{font-size:13px;color:var(--muted);white-space:nowrap}
+.lst-day{margin-top:14px}
+.lst-date{display:flex;align-items:baseline;gap:10px;width:100%;border:0;border-bottom:1px solid var(--line);background:none;padding:6px 2px;text-align:left}
+.lst-date b{font:600 17px var(--serif)}
+.lst-date span{font-size:13px;color:var(--muted)}
+.lst-row{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;border:0;border-bottom:1px solid #EEEEE6;background:none;padding:10px 2px;text-align:left}
+.lst-row:hover{background:#FAFAF6}
+.lst-row .t{font-weight:900;font-variant-numeric:tabular-nums}
+.lst-row .n{min-width:0}
+.lst-row .n b{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.lst-row .n small{display:block;font-size:13px;color:#6B6B62;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lst-row.inactive{opacity:.6}.lst-row.inactive .n b{text-decoration:line-through}
+@media (max-width:640px){
+  .lst-head .btn{order:3}
+  .lst-row{grid-template-columns:44px minmax(0,1fr) auto;gap:8px}
+  .lst-row .chip{font-size:11px;padding:3px 8px}
+  .lst-search span{display:none}
+}
+@media print{.lst-search,.lst-head .btn,.lst-head .seg{display:none!important}}

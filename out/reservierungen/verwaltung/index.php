@@ -71,8 +71,8 @@ function shell(string $title, string $body, bool $app = false): void {
        . '<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#2F4A12">'
        . '<link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="/icon.svg" type="image/svg+xml">'
        . '<link rel="apple-touch-icon" href="/apple-icon.png"><meta name="apple-mobile-web-app-title" content="Reservierungen">'
-       . '<title>' . h($title) . '</title><link rel="stylesheet" href="app.css?v=4"></head><body>' . $body
-       . ($app ? '<script src="app.js?v=4"></script>' : '') . '</body></html>';
+       . '<title>' . h($title) . '</title><link rel="stylesheet" href="app.css?v=5"></head><body>' . $body
+       . ($app ? '<script src="app.js?v=5"></script>' : '') . '</body></html>';
 }
 
 if (!$me) {

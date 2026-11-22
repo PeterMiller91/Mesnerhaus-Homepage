@@ -28,6 +28,51 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         }
         out(200, ['ok' => true, 'available' => (bool)$keys, 'public_key' => $keys['public'] ?? '', 'devices' => $mine, 'others' => $others]);
     }
+    // Alle Reservierungen (kommend + die letzten 60 Tage) für Liste und Suche
+    if (isset($_GET['list']) || isset($_GET['export'])) {
+        $today = date('Y-m-d');
+        $scope = (string)($_GET['scope'] ?? 'kommend') === 'vergangen' ? 'vergangen' : 'kommend';
+        $q = function_exists('mb_strtolower') ? mb_strtolower(trim((string)($_GET['q'] ?? ''))) : strtolower(trim((string)($_GET['q'] ?? '')));
+        $rows = array_values(array_filter(rv_load()['items'], function ($r) use ($today, $scope, $q) {
+            if ($scope === 'kommend' ? $r['date'] < $today : $r['date'] >= $today) return false;
+            if ($q === '') return true;
+            $hay = implode(' ', [$r['name'], $r['phone'] ?? '', $r['email'] ?? '', $r['note'] ?? '', $r['table'] ?? '']);
+            $hay = function_exists('mb_strtolower') ? mb_strtolower($hay) : strtolower($hay);
+            $digits = preg_replace('/\D/', '', $q);
+            return strpos($hay, $q) !== false || (strlen($digits) >= 4 && strpos(preg_replace('/\D/', '', (string)($r['phone'] ?? '')), $digits) !== false);
+        }));
+        usort($rows, function ($a, $b) use ($scope) {
+            $c = [$a['date'], $a['time'], $a['id']] <=> [$b['date'], $b['time'], $b['id']];
+            return $scope === 'kommend' ? $c : -$c;
+        });
+        if (isset($_GET['list'])) {
+            out(200, ['ok' => true, 'scope' => $scope, 'today' => $today, 'keep_days' => RV_KEEP_DAYS, 'items' => array_map(function ($r) {
+                return ['id' => (int)$r['id'], 'date' => $r['date'], 'time' => $r['time'], 'persons' => (int)$r['persons'], 'name' => $r['name'],
+                    'phone' => $r['phone'] ?? '', 'email' => $r['email'] ?? '', 'note' => $r['note'] ?? '', 'table' => $r['table'] ?? '',
+                    'status' => $r['status'], 'source' => $r['source'], 'seen' => !empty($r['seen'])];
+            }, $rows)]);
+        }
+        // CSV-Export (nur Admin), Excel-tauglich: UTF-8 mit BOM, Semikolon
+        if (!$isAdmin) out(403, ['ok' => false, 'message' => 'Nur für Admin.']);
+        if (!hash_equals((string)$_SESSION['csrf'], (string)($_GET['t'] ?? ''))) out(403, ['ok' => false, 'message' => 'Sitzung abgelaufen. Bitte Seite neu laden.']);
+        $status = ['bestaetigt' => 'Bestätigt', 'erschienen' => 'Da', 'storniert' => 'Storniert', 'abgelehnt' => 'Abgelehnt', 'nicht_erschienen' => 'Nicht erschienen'];
+        $source = ['online' => 'Online', 'telefon' => 'Telefon', 'whatsapp' => 'WhatsApp', 'email' => 'E-Mail', 'vor_ort' => 'Vor Ort'];
+        $cell = function ($v): string {
+            $v = str_replace(["\r\n", "\r", "\n"], ' ', (string)$v);
+            if ($v !== '' && strpbrk($v[0], '=+-@') !== false) $v = "'" . $v;      // keine Formeln in Excel
+            return '"' . str_replace('"', '""', $v) . '"';
+        };
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="reservierungen-' . $scope . '-' . date('Y-m-d') . '.csv"');
+        $lines = [implode(';', array_map($cell, ['Datum', 'Uhrzeit', 'Name', 'Personen', 'Telefon', 'E-Mail', 'Tisch', 'Status', 'Quelle', 'Notiz', 'Eingegangen']))];
+        foreach ($rows as $r) {
+            $lines[] = implode(';', array_map($cell, [date('d.m.Y', strtotime($r['date'])), $r['time'], $r['name'], (int)$r['persons'], $r['phone'] ?? '', $r['email'] ?? '',
+                $r['table'] ?? '', $status[$r['status']] ?? $r['status'], $source[$r['source']] ?? $r['source'], $r['note'] ?? '',
+                !empty($r['created']) ? date('d.m.Y H:i', strtotime($r['created'])) : '']));
+        }
+        echo "\xEF\xBB\xBF" . implode("\r\n", $lines) . "\r\n";
+        exit;
+    }
     if (isset($_GET['templates'])) {
         if (!$isAdmin) out(403, ['ok' => false]);
         $sample = rv_sample_reservation();
