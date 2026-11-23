@@ -2,7 +2,7 @@
 /* JSON-Schnittstelle der Reservierungs-App (nur angemeldet). */
 declare(strict_types=1);
 
-require dirname(__DIR__, 2) . '/_tk/resv-lib.php';
+require dirname(__DIR__, 2) . '/_tk/site-lib.php';   // lädt auch resv-lib.php und tageskarte-lib.php
 
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store');
@@ -180,7 +180,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 /* ── Schreiben ───────────────────────────────────────────────── */
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') out(405, ['ok' => false]);
 if (!hash_equals($csrf, (string)($_SERVER['HTTP_X_CSRF'] ?? ''))) out(403, ['ok' => false, 'message' => 'Sitzung abgelaufen. Bitte Seite neu laden.']);
-$in = json_decode((string)file_get_contents('php://input'), true);
+// JSON, bei Datei-Uploads (Website-Bereich) multipart/form-data
+$in = stripos((string)($_SERVER['CONTENT_TYPE'] ?? ''), 'multipart/form-data') === 0 ? $_POST : json_decode((string)file_get_contents('php://input'), true);
 if (!is_array($in)) out(400, ['ok' => false]);
 $act = (string)($in['action'] ?? '');
 if (rv_valid_date((string)($in['_day'] ?? ''))) $DAY_FOR = (string)$in['_day'];
@@ -383,6 +384,9 @@ if ($act === 'password') {
 }
 
 if (!$isAdmin) out(403, ['ok' => false, 'message' => 'Nur für Admins.']);
+
+/* ── Website: Banner, Tageskarte, Sonderkarten, Effekte, Galerie (site-lib.php) ── */
+if ($r = site_admin_action($act, $in)) out($r[0], $r[1]);
 
 /* ── Benutzer verwalten (nur Admin) ─────────────────────────────── */
 function rv_uid_from(string $name): string { $id = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $name) ?? ''); return trim($id, '-') ?: 'nutzer'; }

@@ -5,7 +5,7 @@
   var boot = JSON.parse(root.getAttribute('data-boot'));
   var isAdmin = boot.user.role === 'admin';
   var S = { date: boot.day || boot.today, data: null, menu: false, view: 'liste', planTime: null, area: null, assign: null, edit: null, sel: null, filter: 'alle', scope: 'kommend', q: '', list: null, pickMode: false, picked: {} };
-  try { var sv = localStorage.getItem('mh-view'); if (sv === 'plan' || sv === 'alle') S.view = sv; } catch { /* egal */ }
+  try { var sv = localStorage.getItem('mh-view'); if (sv === 'plan' || sv === 'alle' || (sv === 'web' && isAdmin)) S.view = sv; } catch { /* egal */ }
 
   /* ── Helfer ─────────────────────────────────────────────── */
   function esc(v) {
@@ -104,7 +104,8 @@
       '<nav class="seg-nav" aria-label="Ansicht">' +
         '<button data-view="liste" aria-pressed="' + (S.view === 'liste') + '">Übersicht</button>' +
         '<button data-view="plan" aria-pressed="' + (S.view === 'plan') + '">Tischplan</button>' +
-        '<button data-view="alle" aria-pressed="' + (S.view === 'alle') + '">Liste</button></nav>' +
+        '<button data-view="alle" aria-pressed="' + (S.view === 'alle') + '">Liste</button>' +
+        (isAdmin ? '<button data-view="web" aria-pressed="' + (S.view === 'web') + '">Website</button>' : '') + '</nav>' +
       '<span class="grow"></span>' +
       '<button class="btn new-btn" data-act="new">' + ico('plus') + 'Reservierung</button>' +
       '<button class="avatar" data-act="menu" aria-label="Menü" aria-expanded="' + S.menu + '">' + esc(initial(boot.user.name)) + '</button></div>';
@@ -133,7 +134,7 @@
   function menuHtml() {
     if (!S.menu) return '';
     return '<div class="menu-list" role="menu"><div class="who">Angemeldet als <b>' + esc(boot.user.name) + '</b></div>' +
-      (isAdmin ? '<button role="menuitem" data-act="settings">Einstellungen</button><button role="menuitem" data-act="users">Benutzer</button><button role="menuitem" data-act="templates">E-Mail-Vorlagen</button>' : '') +
+      (isAdmin ? '<button role="menuitem" data-view="web">Website (Banner, Karten, Galerie)</button><button role="menuitem" data-act="settings">Einstellungen</button><button role="menuitem" data-act="users">Benutzer</button><button role="menuitem" data-act="templates">E-Mail-Vorlagen</button>' : '') +
       '<button role="menuitem" data-act="push">Benachrichtigungen</button>' +
       '<button role="menuitem" data-act="print">Tagesliste drucken</button>' +
       '<button role="menuitem" data-act="password">Passwort ändern</button>' +
@@ -258,6 +259,8 @@
       html += planHtml(d);
     } else if (S.view === 'alle') {
       html += listViewHtml();
+    } else if (S.view === 'web' && isAdmin) {
+      html += webHtml();
     } else {
       html += '<div class="dash"><div class="dash-main">' + kpiHtml(d) + timelineHtml(d) + '</div>' +
         '<aside class="dash-side">' + nextHtml(d) + curveHtml(d) + wishesHtml(d) + '</aside></div>';
@@ -272,6 +275,7 @@
     root.innerHTML = html;
 
     if (S.view === 'plan') bindPlan();
+    if (S.view === 'web') bindWeb();
     if (S.view === 'alle') {
       var lq = $('#lq'), tm = null;
       lq.addEventListener('input', function () { clearTimeout(tm); tm = setTimeout(function () { S.q = lq.value; loadList(); }, 250); });
@@ -365,6 +369,237 @@
             '<span class="chip ' + esc(r.status) + '">' + esc(STATUS[r.status] || r.status) + '</span></button>';
         }).join('') + '</div>';
     }).join('');
+  }
+
+  /* ── Website: Banner, Tageskarte, Sonderkarten, Effekte, Galerie (nur Admin) ── */
+  function apiForm(fd) {
+    return fetch('api.php', { method: 'POST', body: fd, headers: { 'X-CSRF': boot.csrf }, credentials: 'same-origin' }).then(function (r) {
+      if (r.status === 401) { location.reload(); throw new Error('login'); }
+      return r.json().catch(function () { return { ok: false, message: r.status === 413 ? 'Die Datei ist zu groß für den Server.' : 'Unerwartete Antwort vom Server (' + r.status + ').' }; });
+    });
+  }
+  // Foto im Browser verkleinern (auch iPhone-HEIC → JPEG), Rückgabe Blob
+  function shrinkImage(file, max, quality) {
+    if (!/^image\//.test(file.type)) return Promise.resolve(null);
+    return createImageBitmap(file, { imageOrientation: 'from-image' }).then(function (bmp) {
+      var s = Math.min(1, max / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
+      c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+      var ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(bmp, 0, 0, c.width, c.height);
+      return new Promise(function (res) { c.toBlob(res, 'image/jpeg', quality || 0.84); });
+    });
+  }
+  function mdToDe(md) { return md ? md.slice(3, 5) + '.' + md.slice(0, 2) + '.' : ''; }
+  function deToMd(v) {
+    var m = String(v || '').trim().match(/^(\d{1,2})\.(\d{1,2})\.?$/);
+    return m ? ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2) : null;
+  }
+  function galThumb(g) { return g.kind === 'static' ? '/images/' + g.base + '-' + (g.base === 'panorama' ? 480 : 360) + '.webp' : '/site.php?f=' + encodeURIComponent(g.id + '-s.jpg'); }
+
+  function loadSite() {
+    return api('POST', { action: 'site' }).then(function (j) { if (j.ok) { S.site = j; if (S.view === 'web') render(); } });
+  }
+  function webMsg(id, text, ok) { var e = $('[data-wmsg="' + id + '"]'); if (!e) { toast(text); return; } e.textContent = text; e.className = 'alert ' + (ok ? 'ok' : 'err'); e.hidden = false; }
+
+  function webHtml() {
+    var w = S.site;
+    if (!w) { loadSite(); return '<section class="panel"><p class="empty">Wird geladen …</p></section>'; }
+    var h = '<div class="web">';
+    h += '<p class="web-intro">Alles, was Gäste auf <b>mesnerhausarmesberg.de</b> sehen. Änderungen sind sofort online. ' +
+      '<a href="/" target="_blank" rel="noopener">Website öffnen</a></p>';
+
+    // 1. Hinweis-Banner
+    var n = w.notice || { text: '', link: '', url: '', label: '', until: '' };
+    h += '<section class="panel wcard" id="w-notice"><div class="wc-head"><h2>Hinweis-Banner</h2>' +
+      (w.notice ? '<span class="wstate on">sichtbar' + (n.until ? ' bis ' + esc(shortDate(n.until)) : '') + '</span>' : '<span class="wstate">aus</span>') + '</div>' +
+      '<p class="hint">Schmale Leiste ganz oben auf der Website, z. B. „Am 24.12. geschlossen“ oder „Neu: Weihnachtsmenü“.</p>' +
+      '<div class="form"><label>Text (max. 160 Zeichen) <span class="muted" data-ncount>' + n.text.length + '/160</span><textarea data-ntext maxlength="160" rows="2">' + esc(n.text) + '</textarea></label>' +
+      '<div class="grid2"><label>Link<select data-nlink>' + Object.keys(w.notice_links).map(function (k) { return '<option value="' + esc(k) + '"' + (k === (n.link || '') ? ' selected' : '') + '>' + esc(w.notice_links[k]) + '</option>'; }).join('') + '</select></label>' +
+      '<label>Anzeigen bis (leer = dauerhaft)<input type="date" data-nuntil value="' + esc(n.until || '') + '"></label></div>' +
+      '<div class="grid2" data-ncustom' + (n.link === 'custom' ? '' : ' hidden') + '><label>Link-Adresse<input data-nurl value="' + esc(n.url || '') + '" placeholder="https://… oder /reservierungen/"></label>' +
+      '<label>Link-Text<input data-nlabel maxlength="40" value="' + esc(n.label || '') + '" placeholder="Mehr erfahren"></label></div>' +
+      '<div class="wc-acts"><button type="button" class="btn primary" data-wact="notice_save">Speichern</button>' +
+      (w.notice ? '<button type="button" class="btn ghost danger" data-wact="notice_delete">Entfernen</button>' : '') + '</div>' +
+      '<p class="alert" data-wmsg="notice" hidden></p></div></section>';
+
+    // 2. Tageskarte
+    var tk = w.tk;
+    h += '<section class="panel wcard" id="w-tk"><div class="wc-head"><h2>Tageskarte</h2>' +
+      (tk ? '<span class="wstate on">online seit ' + esc(new Date(tk.updated * 1000).toLocaleDateString('de-DE')) + '</span>' : '<span class="wstate">keine</span>') + '</div>' +
+      '<div class="tk-row">' + (tk ? '<a class="tk-prev" href="/tageskarte.php?v=' + tk.updated + '" target="_blank" rel="noopener">' +
+        (tk.image ? '<img src="/tageskarte.php?bild&v=' + tk.updated + '" alt="Aktuelle Tageskarte">' : '<span>PDF öffnen</span>') + '</a>' : '') +
+      '<div class="form tk-form"><p class="hint">Foto der Karte (Handykamera genügt) oder PDF. Fotos werden automatisch verkleinert und als PDF bereitgestellt.</p>' +
+      '<label class="filebtn">' + ico('plus') + '<span data-tkname>Foto oder PDF wählen</span><input type="file" data-tkfile accept="image/*,application/pdf"></label>' +
+      '<label>Überschrift (optional)<input data-tkcap maxlength="120" placeholder="z. B. Sonntag, 30. November" value="' + esc(tk ? tk.caption : '') + '"></label>' +
+      '<div class="wc-acts"><button type="button" class="btn primary" data-wact="tk_upload">Hochladen</button>' +
+      (tk ? '<button type="button" class="btn ghost danger" data-wact="tk_delete">Entfernen</button>' : '') + '</div>' +
+      '<p class="alert" data-wmsg="tk" hidden></p></div></div></section>';
+
+    // 3. Sonderkarten
+    h += '<section class="panel wcard" id="w-sp"><div class="wc-head"><h2>Sonderkarten</h2><span class="wstate' + (w.specials.length ? ' on' : '') + '">' + w.specials.length + '</span></div>' +
+      '<p class="hint">Z. B. Weihnachtsmenü, Ostern, Muttertag, Wildwochen. Erscheinen auf der Website bei der Tageskarte, nur im eingestellten Zeitraum.</p>';
+    h += w.specials.map(function (s) {
+      return '<div class="sp-item" data-sp="' + esc(s.id) + '">' +
+        '<a class="sp-thumb" href="/site.php?f=' + encodeURIComponent(s.file) + '" target="_blank" rel="noopener">' + (s.image ? '<img src="/site.php?f=' + encodeURIComponent(s.image) + '" alt="">' : '<span>PDF</span>') + '</a>' +
+        '<div class="form sp-form"><div class="grid2"><label>Titel<input data-f="title" maxlength="60" value="' + esc(s.title) + '"></label>' +
+        '<label class="check sp-on"><input type="checkbox" data-f="on"' + (s.on ? ' checked' : '') + '> auf der Website zeigen</label></div>' +
+        '<label>Kurzer Text (optional)<input data-f="text" maxlength="200" value="' + esc(s.text) + '"></label>' +
+        '<div class="grid2"><label>Zeigen ab<input type="date" data-f="from" value="' + esc(s.from) + '"></label><label>Zeigen bis<input type="date" data-f="to" value="' + esc(s.to) + '"></label></div>' +
+        '<div class="wc-acts"><button type="button" class="btn small primary" data-spsave="' + esc(s.id) + '">Speichern</button>' +
+        '<button type="button" class="btn small ghost danger" data-spdel="' + esc(s.id) + '">Löschen</button></div></div></div>';
+    }).join('');
+    h += '<details class="sp-new"' + (w.specials.length ? '' : ' open') + '><summary>' + ico('plus') + 'Neue Sonderkarte</summary><div class="form">' +
+      '<label>Titel<input data-spn="title" maxlength="60" placeholder="z. B. Weihnachtsmenü 2026"></label>' +
+      '<label>Kurzer Text (optional)<input data-spn="text" maxlength="200" placeholder="z. B. Am 25. und 26. Dezember, bitte reservieren"></label>' +
+      '<div class="grid2"><label>Zeigen ab<input type="date" data-spn="from"></label><label>Zeigen bis<input type="date" data-spn="to"></label></div>' +
+      '<label class="filebtn">' + ico('plus') + '<span data-spname>Foto oder PDF der Karte wählen</span><input type="file" data-spfile accept="image/*,application/pdf"></label>' +
+      '<div class="wc-acts"><button type="button" class="btn primary" data-wact="special_add">Anlegen</button></div></div></details>' +
+      '<p class="alert" data-wmsg="sp" hidden></p></section>';
+
+    // 4. Saison-Effekte
+    h += '<section class="panel wcard" id="w-fx"><div class="wc-head"><h2>Saison-Effekte</h2>' +
+      (w.active_effect ? '<span class="wstate on">heute: ' + esc(w.effect_types[w.active_effect.type]) + '</span>' : '<span class="wstate">heute keiner</span>') + '</div>' +
+      '<p class="hint">Leichter Schnee im Advent, fallendes Laub im Herbst oder Blüten im Frühling über der Startseite. Gilt jedes Jahr im Zeitraum. ' +
+      'Wer am Gerät „Bewegung reduzieren“ eingestellt hat, sieht keinen Effekt.</p>' +
+      '<div class="fx-list">' + w.effects.map(function (e, i) {
+        return '<div class="fx-row" data-fx="' + i + '"><label class="check"><input type="checkbox" data-fxf="on"' + (e.on ? ' checked' : '') + '> an</label>' +
+          '<select data-fxf="type" aria-label="Effekt">' + Object.keys(w.effect_types).map(function (k) { return '<option value="' + k + '"' + (k === e.type ? ' selected' : '') + '>' + esc(w.effect_types[k]) + '</option>'; }).join('') + '</select>' +
+          '<span class="fx-range"><input data-fxf="from" value="' + mdToDe(e.from) + '" placeholder="TT.MM." aria-label="von" inputmode="decimal"> – ' +
+          '<input data-fxf="to" value="' + mdToDe(e.to) + '" placeholder="TT.MM." aria-label="bis" inputmode="decimal"></span>' +
+          '<select data-fxf="intensity" aria-label="Stärke">' + ['leicht', 'mittel', 'stark'].map(function (k) { return '<option' + (k === e.intensity ? ' selected' : '') + '>' + k + '</option>'; }).join('') + '</select>' +
+          '<a class="btn small ghost" href="/?effekt=' + e.type + '&staerke=' + e.intensity + '" target="_blank" rel="noopener">Vorschau</a>' +
+          '<button type="button" class="icon-btn" data-fxdel="' + i + '" aria-label="Effekt entfernen">' + ico('close') + '</button></div>';
+      }).join('') + '</div>' +
+      '<div class="wc-acts"><button type="button" class="btn ghost" data-wact="fx_add">' + ico('plus') + 'Effekt</button>' +
+      '<button type="button" class="btn primary" data-wact="effects_save">Speichern</button></div><p class="alert" data-wmsg="fx" hidden></p></section>';
+
+    // 5. Galerie
+    h += '<section class="panel wcard" id="w-gal"><div class="wc-head"><h2>Galerie</h2><span class="wstate on">' + w.gallery.length + ' Bilder</span></div>' +
+      '<p class="hint">Bereich „Einblicke“ auf der Startseite. Neue Fotos stehen vorne. Pfeile ändern die Reihenfolge, „breit“ zeigt ein Bild über zwei Spalten.</p>' +
+      '<label class="filebtn">' + ico('plus') + '<span data-galname>Fotos hinzufügen</span><input type="file" data-galfile accept="image/*" multiple></label>' +
+      '<p class="alert" data-wmsg="gal" hidden></p>' +
+      '<div class="gal-grid">' + w.gallery.map(function (g, i) {
+        return '<div class="gal-item" data-gal="' + esc(g.id) + '"><div class="gal-img"><img src="' + esc(galThumb(g)) + '" alt="" loading="lazy">' +
+          '<div class="gal-tools"><button type="button" data-galmove="-1" aria-label="nach vorne"' + (i === 0 ? ' disabled' : '') + '>' + ico('left') + '</button>' +
+          '<button type="button" data-galmove="1" aria-label="nach hinten"' + (i === w.gallery.length - 1 ? ' disabled' : '') + '>' + ico('right') + '</button>' +
+          '<button type="button" data-galdel aria-label="Bild entfernen">' + ico('close') + '</button></div></div>' +
+          '<input data-gf="caption" maxlength="80" value="' + esc(g.caption) + '" placeholder="Bildunterschrift" aria-label="Bildunterschrift">' +
+          '<input data-gf="alt" maxlength="120" value="' + esc(g.alt) + '" placeholder="Beschreibung (für Blinde/Google)" aria-label="Bildbeschreibung">' +
+          '<label class="check"><input type="checkbox" data-gf="wide"' + (g.wide ? ' checked' : '') + '> breit</label></div>';
+      }).join('') + '</div>' +
+      '<div class="wc-acts"><button type="button" class="btn primary" data-wact="gallery_save">Reihenfolge &amp; Texte speichern</button>' +
+      (w.gallery_custom ? '<button type="button" class="btn ghost" data-wact="gallery_reset">Original wiederherstellen</button>' : '') + '</div></section>';
+    return h + '</div>';
+  }
+
+  function readGallery() {
+    return $$('[data-gal]').map(function (el) {
+      return { id: el.dataset.gal, caption: $('[data-gf=caption]', el).value, alt: $('[data-gf=alt]', el).value, wide: $('[data-gf=wide]', el).checked };
+    });
+  }
+  function readEffects() {
+    return $$('[data-fx]').map(function (el) {
+      return { id: (S.site.effects[+el.dataset.fx] || {}).id, type: $('[data-fxf=type]', el).value, from: deToMd($('[data-fxf=from]', el).value), to: deToMd($('[data-fxf=to]', el).value),
+        intensity: $('[data-fxf=intensity]', el).value, on: $('[data-fxf=on]', el).checked };
+    });
+  }
+
+  function bindWeb() {
+    if (!S.site) return;
+    var nt = $('[data-ntext]'); if (nt) nt.addEventListener('input', function () { $('[data-ncount]').textContent = nt.value.length + '/160'; });
+    var nl = $('[data-nlink]'); if (nl) nl.addEventListener('change', function () { $('[data-ncustom]').hidden = nl.value !== 'custom'; });
+    [['[data-tkfile]', '[data-tkname]'], ['[data-spfile]', '[data-spname]']].forEach(function (p) {
+      var f = $(p[0]); if (f) f.addEventListener('change', function () { if (f.files[0]) $(p[1]).textContent = f.files[0].name; });
+    });
+    var gf = $('[data-galfile]');
+    if (gf) gf.addEventListener('change', function () {
+      var files = Array.prototype.slice.call(gf.files); if (!files.length) return;
+      var label = $('[data-galname]'), done = 0;
+      var next = function (i) {
+        if (i >= files.length) { label.textContent = 'Fotos hinzufügen'; render(); webMsg('gal', done + (done === 1 ? ' Bild hinzugefügt.' : ' Bilder hinzugefügt.') + ' Es ist schon online. Bildunterschrift eintragen und speichern.', true); return; }
+        label.textContent = 'Lade Bild ' + (i + 1) + ' von ' + files.length + ' …';
+        Promise.all([shrinkImage(files[i], 1600, 0.84), shrinkImage(files[i], 480, 0.8)]).then(function (b) {
+          if (!b[0] || !b[1]) throw new Error('Dieses Bild kann der Browser nicht lesen.');
+          var fd = new FormData(); fd.append('action', 'gallery_add'); fd.append('large', b[0], 'l.jpg'); fd.append('small', b[1], 's.jpg');
+          fd.append('caption', ''); fd.append('alt', files[i].name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' '));
+          return apiForm(fd);
+        }).then(function (j) {
+          if (!j.ok) throw new Error(j.message || 'Hochladen fehlgeschlagen.');
+          S.site.gallery = j.gallery; S.site.gallery_custom = true; done++; next(i + 1);
+        }).catch(function (err) { label.textContent = 'Fotos hinzufügen'; webMsg('gal', err.message, false); if (done) render(); });
+      };
+      next(0);
+    });
+  }
+
+  function webClick(t) {
+    var w = S.site; if (!w) return false;
+    var act = t.dataset.wact;
+    if (t.dataset.galmove || t.dataset.galdel !== undefined) {
+      var items = readGallery(), el = t.closest('[data-gal]'), id = el.dataset.gal, i = items.map(function (x) { return x.id; }).indexOf(id);
+      // Texte aus den Feldern übernehmen, dann verschieben/entfernen
+      var byId = {}; w.gallery.forEach(function (g) { byId[g.id] = g; });
+      items.forEach(function (x) { Object.assign(byId[x.id], { caption: x.caption, alt: x.alt, wide: x.wide }); });
+      var list = items.map(function (x) { return byId[x.id]; });
+      if (t.dataset.galmove) { var j = i + (+t.dataset.galmove); if (j < 0 || j >= list.length) return true; var tmp = list[i]; list[i] = list[j]; list[j] = tmp; }
+      else {
+        if (!t.dataset.sure) { t.dataset.sure = '1'; t.classList.add('sure'); t.setAttribute('aria-label', 'Wirklich entfernen? Nochmal tippen'); return true; }
+        list.splice(i, 1);
+      }
+      w.gallery = list; w._galDirty = true; render();
+      webMsg('gal', 'Noch nicht gespeichert: unten auf „Reihenfolge & Texte speichern“ tippen.', false);
+      return true;
+    }
+    if (t.dataset.spsave || t.dataset.spdel) {
+      var sid = t.dataset.spsave || t.dataset.spdel, box = t.closest('[data-sp]');
+      if (t.dataset.spdel && !t.dataset.sure) { t.dataset.sure = '1'; t.textContent = 'Wirklich löschen?'; return true; }
+      var body = t.dataset.spdel ? { action: 'special_delete', id: sid } : { action: 'special_update', id: sid, title: $('[data-f=title]', box).value, text: $('[data-f=text]', box).value,
+        from: $('[data-f=from]', box).value, to: $('[data-f=to]', box).value, on: $('[data-f=on]', box).checked };
+      api('POST', body).then(function (j) { if (j.ok) { w.specials = j.specials; render(); } webMsg('sp', j.message || 'Fehler', j.ok); });
+      return true;
+    }
+    if (t.dataset.fxdel !== undefined) { w.effects = readEffects(); w.effects.splice(+t.dataset.fxdel, 1); render(); webMsg('fx', 'Noch nicht gespeichert.', false); return true; }
+    if (!act) return false;
+    if (act === 'fx_add') { w.effects = readEffects(); w.effects.push({ type: 'schnee', from: '12-01', to: '12-26', intensity: 'leicht', on: true }); render(); return true; }
+    if (act === 'effects_save') {
+      var fx = readEffects();
+      if (fx.some(function (e) { return !e.from || !e.to; })) { webMsg('fx', 'Bitte Zeiträume als TT.MM. eingeben, z. B. 01.12. – 06.01.', false); return true; }
+      api('POST', { action: 'effects_save', effects: fx }).then(function (j) { if (j.ok) { loadSite().then(function () { webMsg('fx', j.message, true); }); } else webMsg('fx', j.message || 'Fehler', false); });
+      return true;
+    }
+    if (act === 'notice_save') {
+      api('POST', { action: 'notice_save', text: $('[data-ntext]').value, link: $('[data-nlink]').value, until: $('[data-nuntil]').value, url: $('[data-nurl]').value, label: $('[data-nlabel]').value })
+        .then(function (j) { if (j.ok) loadSite().then(function () { webMsg('notice', j.message, true); }); else webMsg('notice', j.message || 'Fehler', false); });
+      return true;
+    }
+    if (act === 'notice_delete' || act === 'tk_delete' || act === 'gallery_reset') {
+      if (!t.dataset.sure) { t.dataset.sure = '1'; t.textContent = 'Wirklich? Nochmal tippen'; return true; }
+      api('POST', { action: act }).then(function (j) { var k = act === 'tk_delete' ? 'tk' : act === 'notice_delete' ? 'notice' : 'gal'; loadSite().then(function () { webMsg(k, j.message || 'Fehler', j.ok); }); });
+      return true;
+    }
+    if (act === 'gallery_save') {
+      api('POST', { action: 'gallery_save', items: readGallery() }).then(function (j) {
+        if (j.ok) { w.gallery = j.gallery; w.gallery_custom = true; render(); }
+        webMsg('gal', j.message || 'Fehler', j.ok);
+      });
+      return true;
+    }
+    if (act === 'tk_upload' || act === 'special_add') {
+      var isTk = act === 'tk_upload', file = $(isTk ? '[data-tkfile]' : '[data-spfile]').files[0], key = isTk ? 'tk' : 'sp';
+      if (!isTk && $('[data-spn=title]').value.trim().length < 2) { webMsg(key, 'Bitte einen Titel eingeben.', false); return true; }
+      if (!file) { webMsg(key, 'Bitte zuerst ein Foto oder eine PDF wählen.', false); return true; }
+      t.disabled = true; var label = t.textContent; t.textContent = 'Wird hochgeladen …';
+      (/^image\//.test(file.type) ? shrinkImage(file, 2200, 0.86) : Promise.resolve(file)).then(function (blob) {
+        var fd = new FormData(); fd.append('action', act); fd.append('file', blob || file, blob ? 'karte.jpg' : file.name);
+        if (isTk) fd.append('caption', $('[data-tkcap]').value);
+        else ['title', 'text', 'from', 'to'].forEach(function (k) { fd.append(k, $('[data-spn=' + k + ']').value); });
+        return apiForm(fd);
+      }).then(function (j) {
+        t.disabled = false; t.textContent = label;
+        if (j.ok) loadSite().then(function () { webMsg(key, j.message, true); }); else webMsg(key, j.message || 'Fehler', false);
+      }).catch(function () { t.disabled = false; t.textContent = label; webMsg(key, 'Hochladen fehlgeschlagen. Bitte nochmal versuchen.', false); });
+      return true;
+    }
+    return false;
   }
 
   /* ── Monatsübersicht ────────────────────────────────────── */
@@ -1139,6 +1374,7 @@
     }
     if (t.dataset.goview) { S.view = t.dataset.goview; load(t.dataset.day); return; }
     if (t.dataset.view && S.menu) S.menu = false;
+    if (S.view === 'web' && !t.dataset.view && webClick(t)) return;
     if (planClick(t, act)) return;
     if (t.dataset.lpick) { var pid = t.dataset.lpick; if (S.picked[pid]) delete S.picked[pid]; else S.picked[pid] = true; refreshList(); return; }
     if (act === 'pickmode') { S.pickMode = !S.pickMode; S.picked = {}; render(); return; }
@@ -1189,8 +1425,8 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && S.menu) { S.menu = false; render(); } });
 
   // Alle 60 Sekunden aktualisieren, solange die App sichtbar ist und kein Dialog offen ist
-  setInterval(function () { if (!document.hidden && !document.querySelector('dialog[open]') && !S.menu && !S.edit && !(document.activeElement && document.activeElement.id === 'lq')) load(); }, 60000);
-  document.addEventListener('visibilitychange', function () { if (!document.hidden && !document.querySelector('dialog[open]') && !S.edit) load(); });
+  setInterval(function () { if (!document.hidden && S.view !== 'web' && !document.querySelector('dialog[open]') && !S.menu && !S.edit && !(document.activeElement && document.activeElement.id === 'lq')) load(); }, 60000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && S.view !== 'web' && !document.querySelector('dialog[open]') && !S.edit) load(); });
 
   load().catch(function () { root.innerHTML = '<p class="loading">Verbindung fehlgeschlagen. Bitte neu laden.</p>'; });
 })();

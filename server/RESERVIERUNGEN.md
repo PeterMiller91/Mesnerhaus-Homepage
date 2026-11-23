@@ -191,3 +191,21 @@ Typische Fehlermeldungen:
 | `public/reservierungen/verwaltung/` | Verwaltungs-App (index.php, api.php, app.js, app.css) |
 | `public/_tk/resv-lib.php` | Gemeinsame Logik (Speicher, Platzberechnung, Logins, E-Mails) |
 | `src/components/OnlineBooking.tsx` | Buchungsformular auf der Website (Rückfall: altes WhatsApp/E-Mail-Formular) |
+
+## Website-Bereich (nur Admin)
+
+Verwaltung → oben **„Website“** (Handy: Menü „Mehr“ → Website). Alles ist sofort online:
+
+- **Hinweis-Banner:** Text (max. 160 Zeichen), optional Link und „anzeigen bis“.
+- **Tageskarte:** Foto oder PDF hochladen (Fotos werden verkleinert und als PDF bereitgestellt), Überschrift, entfernen.
+  Der bisherige geheime Upload-Link funktioniert weiterhin.
+- **Sonderkarten:** z. B. Weihnachtsmenü. Titel, kurzer Text, Zeitraum, Foto oder PDF. Erscheinen auf der Startseite
+  unter der Tageskarte, nur im Zeitraum und wenn „auf der Website zeigen“ an ist.
+- **Saison-Effekte:** Schnee, Herbstlaub, Frühlingsblüten. Zeitraum als TT.MM. (gilt jedes Jahr, auch über Silvester),
+  Stärke leicht/mittel/stark, „Vorschau“ zeigt die Startseite mit dem Effekt. Bei „Bewegung reduzieren“ am Gerät kein Effekt.
+- **Galerie:** Fotos hinzufügen (werden im Browser verkleinert), Reihenfolge per Pfeil, Bildunterschrift,
+  Beschreibung, „breit“, entfernen. „Original wiederherstellen“ setzt auf die eingebauten Bilder zurück.
+
+Gespeichert in `site-config.php` und im Ordner `site/` im Speicherordner. Ausgeliefert über `/site.php`.
+PDFs für Sonderkarten dürfen höchstens so groß sein wie die Upload-Grenze des Servers (Plesk → PHP-Einstellungen
+`upload_max_filesize`); Fotos sind nach dem Verkleinern immer klein genug.

@@ -10,6 +10,9 @@ import HoursTable from "@/components/HoursTable";
 import WeatherWidget from "@/components/WeatherWidget";
 import ReviewCarousel from "@/components/ReviewCarousel";
 import Tageskarte from "@/components/Tageskarte";
+import SpecialMenus from "@/components/SpecialMenus";
+import Gallery from "@/components/Gallery";
+import SeasonalEffect from "@/components/SeasonalEffect";
 import ConsentMap from "@/components/ConsentMap";
 import SiteFooter from "@/components/SiteFooter";
 import {
@@ -162,6 +165,7 @@ export default function Home() {
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <NavScrolled />
+      <SeasonalEffect />
       <FloatingCTA />
 
       <main>
@@ -324,23 +328,10 @@ export default function Home() {
                 So sieht ein Sonntag am Armesberg aus
               </h2>
             </ScrollReveal>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-              {gallery.map(({ base, wide, src, alt, caption, pos }, i) => (
-                <ScrollReveal key={base} delay={(i % 4) * 70} className={wide ? "col-span-2" : ""}>
-                  <figure>
-                    <div className={`img-zoom-wrap rounded-2xl overflow-hidden shadow-md ${wide ? "aspect-[16/9]" : "aspect-square"}`}>
-                      <picture>
-                        {src.large && <source media="(min-width:600px)" srcSet={`/images/${base}-${src.large}.webp`} />}
-                        <img src={`/images/${base}-${src.small}.webp`} alt={alt}
-                          className="w-full h-full object-cover" style={pos ? { objectPosition: pos } : undefined}
-                          loading="lazy" width={wide ? 480 : 360} height={wide ? 270 : 360} />
-                      </picture>
-                    </div>
-                    <figcaption className="mt-2 text-xs md:text-sm text-[var(--color-mid)] text-center">{caption}</figcaption>
-                  </figure>
-                </ScrollReveal>
-              ))}
-            </div>
+            <Gallery initial={gallery.map(({ base, src, alt, caption, wide, pos }) => ({
+              id: base, alt, caption, wide: !!wide, pos: pos ?? "",
+              small: `/images/${base}-${src.small}.webp`, large: `/images/${base}-${src.large ?? src.small}.webp`,
+            }))} />
           </div>
         </section>
 
@@ -363,6 +354,7 @@ export default function Home() {
             <ScrollReveal delay={120}>
               <Tageskarte />
             </ScrollReveal>
+            <SpecialMenus />
           </div>
         </section>
 
